@@ -4,7 +4,7 @@ from GameState import GameState
 from random import randrange
 from Card import Card
 
-from RandomPlayer import RandomPlayer
+
 class Table(object):
 
     TEAM_A = 0
@@ -29,15 +29,14 @@ class Table(object):
 
         self.game_state.set_state(GameState.DEAL)
 
-        # This is set when the first card of the trick is being played. It's false when it's not the first card.
-        self.tick_begin = True
-
     def next_player(self):
         """
         Increment the current player by one spot.
         :return: Nothing.
         """
         self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
+        while self.players[self.current_player_turn].is_sitting_out():
+            self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
 
     def step_game(self):
         """
@@ -57,45 +56,129 @@ class Table(object):
         elif self.game_state.is_bidding():
             self.bid_step()
 
-        elif self.game_state.is_trick():
-            self.trick_step()
+        elif self.game_state.is_hand_begin():
+            self.hand_begin()
+
+        elif self.game_state.is_trick_start():
+            self.trick_start()
+
+        elif self.game_state.is_trick_middle():
+            self.trick_middle()
+        elif self.game_state.is_trick_end():
+            self.trick_end()
 
         elif self.game_state.is_end():
             raise Exception("Game State not yet implemented.")
         else:
             raise Exception("Step into an unknown game state {}".format(self.game_state.get_state()))
 
+    def hand_begin(self):
+        """
+        This is the logic that controls what happens at the beginning of a new hand.
+        :return:
+        """
+        self.reset_current_player() # Set up so that we play with the next player being to the left of the dealer.
+        self.game_state.lead_player = None
+        self.game_state.set_state(GameState.TRICK_START)
 
-    def trick_step(self):
+    def trick_start(self):
+
+        # In this case, this would be the first trick of the hand. Get the player to the left of the dealer.
+        if self.game_state.lead_player is None:
+            current_player = self.get_current_player()
+            while current_player.is_sitting_out():
+                self.next_player()
+                current_player = self.get_current_player()
+        else:
+            current_player = self.game_state.lead_player
+
+        card = current_player.make_move(self.game_state)
+        if not self.game_state.is_valid_play(card, current_player.hand):
+            raise ValueError("{} chose an invalid card to play. {}".format(current_player.name, card))
+        self.game_state.lead_player = current_player
+        self.game_state.lead_card = card
+        self.game_state.set_state(GameState.TRICK_MIDDLE)
+        self.next_player()  # Set up the next state so that it will have a valid player.
+
+    def trick_middle(self):
+        """
+        Perform all tricks other than the lead trick.
+
+        :return: Nothing.
+        """
         current_player = self.get_current_player()
-        dealer = self.get_dealer()
+        if current_player == self.game_state.lead_player:
+            self.game_state.set_state(GameState.TRICK_END)
+            return
 
-        if self.game_state.state == GameState.TRICK_START:
-            # TODO: How can we enforce that this player actually has this card?
-            card = current_player.make_move(self.game_state)
-            if not self.game_state.is_valid_play(card, current_player.hand):
-                raise Exception("{} attempted to play {} However this is an "
-                                "invalid card to play.".format(current_player.name, card))
+        self.player_move(current_player)
+        self.next_player()
 
-            self.game_state.trick_cards[current_player.player_num] = card
+    def trick_end(self):
+        """
+        The end of the trick, after all players have played.
 
-            if current_player == dealer:
-                self.game_state.set_state(GameState.TRICK_END)
+        We need to decide who the winner is, assign them as the next lead
+        add their score to their hand score, then setup for the next trick.
 
-            self.next_player()
+        :return:
+        """
+        winner_id = self.game_state.calc_winner()
+        # Find the winner ID in the array. They aren't necessarally the same.
+        for num, player in enumerate(self.players):
+            if player.player_num == winner_id:
+                print("{} Won this trick".format(player.name))
+                self.game_state.lead_player = player
+                self.current_player_turn = num
+                player.hand_score += 1
+                break
 
-        if self.game_state.state == GameState.TRICK_END:
-            winner_id = self.game_state.calc_winner()
-            self.game_state.reset_trick()
+        self.game_state.reset_trick()
+        self.game_state.trick_num += 1
+
+        if self.game_state.trick_num == 5:
+            self.game_state.set_state(GameState.HAND_END)
+        else:
+            self.game_state.set_state(GameState.TRICK_START)
+
+    def player_move(self, current_player: Player):
+        """
+        Helper function to get a move from a player.
+
+        Provides validation of the move.
+
+        :param current_player: The player to make a move.
+        :return: Nothing
+        :raises: Exception if the played card is invalid.
+        """
+        # TODO: How can we enforce that this player actually has this card?
+        card = current_player.make_move(self.game_state)
+        if not self.game_state.is_valid_play(card, current_player.hand):
+            raise Exception("{} attempted to play {} However this is an "
+                            "invalid card to play.".format(current_player.name, card))
+
+        self.game_state.trick_cards[current_player.player_num] = card
 
     def bid_step(self):
+        """
+        Step Through the bidding state.
+
+        This is the main router function between BIDDING_RND_1 and BIDDING_RND 2.
+
+        :return: Nothing.
+        """
         if self.game_state.get_state() == GameState.BIDDING_RND_1:
             self.handle_bidding_rnd_1()
         elif self.game_state.get_state() == GameState.BIDDING_RND_2:
             self.handle_bidding_rnd_2()
 
-
     def handle_bidding_rnd_1(self):
+        """
+        Perform all logic necessary for bidding round one.
+
+        :return: Nothing.
+        :raises: ValueError if a player attempts to bid something other than ORDER_UP or PASS.
+        """
         current_player = self.get_current_player()
         dealer = self.get_dealer()
 
@@ -114,7 +197,6 @@ class Table(object):
         else:
             raise ValueError("Invalid bid from {}".format(current_player.name))
 
-
     def handle_bid(self, current_player: Player, dealer: Player):
         """
         The current player has decided to order up a card. This function handles that logic.
@@ -132,9 +214,6 @@ class Table(object):
                                                                       top_card, top_card.get_suit_str()))
         self.handle_loaner(current_player)
 
-
-
-
     def handle_bidding_rnd_2(self):
         """
         In this bidding round each player has the option to announce trumps as long
@@ -148,6 +227,7 @@ class Table(object):
         bid = current_player.make_bid_rnd_2(self.game_state)
         if bid != Card.SUIT_NOSUIT:
             self.handle_make(current_player, bid)
+            self.game_state.set_trumps(bid)
             self.game_state.set_state(GameState.TRICK_START)
             self.game_state.bidding_team = current_player.team_id
             self.reset_current_player()
@@ -177,9 +257,8 @@ class Table(object):
             raise ValueError("{} tried to make a suit that doesn't exist {}. NOTE: This needs to be passed back"
                              "to the player somehow.".format(current_player.name, selected_suit))
 
-        print("{} has set {} as Trumps.".format(current_player.name, selected_suit))
+        print("{} has set {} as Trumps.".format(current_player.name, Card.suit_str(selected_suit)))
         self.handle_loaner(current_player)
-
 
     def handle_loaner(self, current_player: Player) -> bool:
         """

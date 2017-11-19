@@ -9,14 +9,13 @@ class Card(object):
     COLOR_BLACK = 0 # Detrmined as SUIT_SPADES % 2 == 0 and SUIT_CLUBS % 2 == 0
     COLOR_RED = 1 # Determined as SUIT_SPADES % 2 == 1 and SUIT_CLUBS % 2 == 1
 
-    ACE = 13
-    KING = 12
-    QUEEN = 11
-    JACK = 10
+    ACE = 14
+    KING = 13
+    QUEEN = 12
+    JACK = 11
 
     SUITS = [SUIT_SPADES, SUIT_HEARTS, SUIT_CLUBS, SUIT_DIAMONDS]
     VALUES = [9, 10, JACK, QUEEN, KING, ACE]
-
 
     def __init__(self, suit=None, value=None):
         if value < 9 or value > Card.ACE:
@@ -30,11 +29,33 @@ class Card(object):
     def get_value(self) -> int:
         return self.value
 
-    def get_total_value(self, trump_suit):
-        value = self.value
+    def get_total_value(self, trump_suit: int, lead_suit: int):
+        color = self.get_color(self.suit)
+        trump_color = self.get_color(trump_suit)
+
+        ret_val = 0
+        if self.suit == lead_suit and trump_suit != lead_suit:
+            ret_val += self.value
+
+        if color == trump_color:
+            # We at least have the same color as trump. Lets determine if it's a jack
+            if self.suit == trump_suit:
+                if self.value == Card.JACK:
+                    # We have the right bower
+                    ret_val += 2000 + self.value
+                else:
+                    # We have a trump, but not the right bower
+                    ret_val += 100 + self.value
+
+            elif self.suit != trump_suit and self.value == Card.JACK:
+                # We don't have the same suit, but the same color, and we have the Jack, This is the left bower.
+                ret_val += 1000 + self.value
 
 
-    def get_color(self) -> int:
+        return ret_val
+
+
+    def get_color(self, suit: int) -> int:
         """
         Determine the color of the suit.
 
@@ -42,7 +63,7 @@ class Card(object):
 
         :return: 0 if the suit is black 1 if the suit is red.
         """
-        return self.suit % 2
+        return suit % 2
 
     def get_suit(self) -> int:
         return self.suit
@@ -79,14 +100,17 @@ class Card(object):
         return "Unk"
 
     def get_suit_str(self) -> str:
-        out_str = ""
-        if self.suit == Card.SUIT_SPADES:
+        return self.suit_str(self.suit)
+
+    @staticmethod
+    def suit_str(suit: int) -> str:
+        if suit == Card.SUIT_SPADES:
             return "S"
-        elif self.suit == Card.SUIT_DIAMONDS:
+        elif suit == Card.SUIT_DIAMONDS:
             return "D"
-        elif self.suit == Card.SUIT_CLUBS:
+        elif suit == Card.SUIT_CLUBS:
             return "C"
-        elif self.suit == Card.SUIT_HEARTS:
+        elif suit == Card.SUIT_HEARTS:
             return "H"
 
         return "Unk"

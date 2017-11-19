@@ -15,6 +15,7 @@ class Player(object):
 
         self.going_alone = False
         self.sitting_out = False
+        self.hand_score = 0
 
     def make_move(self, game_state: GameState):
         raise Exception("Cannot have a player without a personality.")
@@ -56,6 +57,9 @@ class Player(object):
     def sit_out(self):
         self.sitting_out = True
         self.going_alone = False
+
+    def is_sitting_out(self):
+        return self.sitting_out
 
     def __repr__(self):
         return "Name: {} Team {} Hand: {}".format(self.name, self.team_id, self.hand)

@@ -2,6 +2,8 @@ from Table import Table
 from GameState import GameState
 from Player import Player
 from RandomPlayer import RandomPlayer
+
+
 def main():
 
     t = Table(player_type=RandomPlayer)
@@ -11,7 +13,7 @@ def main():
     for player in t.players:
         print(player)
 
-    while t.game_state.get_state() != GameState.TRICK_START:
+    while t.game_state.get_state() != GameState.HAND_END:
         t.step_game()
 
     print(t.get_dealer())

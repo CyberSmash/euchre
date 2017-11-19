@@ -11,8 +11,13 @@ class RandomPlayer(Player):
     CHANCE_OF_LOANER = 32
 
     def make_move(self, game_state: GameState):
-        pass
-
+        # Randomly pick a card.
+        card = choice(self.hand)
+        while not game_state.is_valid_play(card, self.hand):
+            card = choice(self.hand)
+        print("{} plays {}".format(self.name, card))
+        self.hand.remove(card)
+        return card
 
     def make_bid_rnd_1(self, game_state: GameState) -> int:
         """
@@ -26,7 +31,6 @@ class RandomPlayer(Player):
             return Player.ORDER_UP
 
         return Player.PASS
-
 
     def is_loaner(self, game_state: GameState) -> bool:
         """
@@ -57,7 +61,6 @@ class RandomPlayer(Player):
 
         picked_suit = choice(suits)
         return picked_suit
-
 
     def discard(self, game_state: GameState) -> Card:
         idx = randrange(0, len(self.hand))
