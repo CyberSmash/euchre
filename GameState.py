@@ -1,7 +1,7 @@
 from Deck import Deck
 from Card import Card
 from typing import List
-
+import logging
 class GameState(object):
 
     DEAL = 0
@@ -56,7 +56,7 @@ class GameState(object):
 
     def set_state(self, new_state: int):
         self.state = new_state
-        print("Game State Changed to {}".format(self.get_current_state_str()))
+        logging.info("Game State Changed to {}".format(self.get_current_state_str()))
 
     def progress_state(self):
         self.state += 1 % (GameState.GAME_END + 1)
@@ -96,6 +96,7 @@ class GameState(object):
 
     def set_top_card(self, card: Card):
         self.top_card = card
+        logging.info("Top Card: {}".format(self.top_card))
 
     def give_top_card(self):
         """
@@ -145,7 +146,7 @@ class GameState(object):
         if state == GameState.GAME_END:
             return "END"
 
-    def is_valid_play(self, played_card: Card, player_hand: list):
+    def is_valid_play(self, played_card: Card, player_hand: list) -> bool:
         """
         Determine if the card that's played is legal to play.
 
@@ -157,15 +158,30 @@ class GameState(object):
             # Person who plays first can play anything...
             return True
 
-        lead_suit = self.lead_card.suit
-        if played_card.suit == lead_suit:
+        lead_suit = self.lead_card.get_suit(self.trumps)
+        if played_card.get_suit(self.trumps) == lead_suit:
             # As long as we're following suit, it's always correct.
             return True
 
         # Determine if the player COULD have followed suit.
         for card in player_hand:
-            if card.suit == lead_suit and card is not played_card:
+            if card.get_suit(self.trumps) == lead_suit and card is not played_card:
                 # Player could have lead with a different card of appropriate suit.
                 return False
 
         return True
+
+    def get_valid_plays(self, hand: list) -> list:
+        """
+        Get all of the valid plays in a players hand.
+
+        :param hand: A list of cards that make up the players hand.
+        :return: A list of valid cards to play
+        """
+        valid_plays = list()
+
+        for card in hand:
+            if self.is_valid_play(card, hand):
+                valid_plays.append(card)
+
+        return valid_plays

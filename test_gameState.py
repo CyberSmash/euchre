@@ -69,5 +69,32 @@ class TestGameState(TestCase):
             2: Card(Card.SUIT_DIAMONDS, Card.JACK),
             3: Card(Card.SUIT_HEARTS, Card.JACK)
         }
+
         winner = self.game_state.calc_winner()
         self.assertEqual(winner, 2)
+
+        self.game_state.lead_card = Card(Card.SUIT_DIAMONDS, Card.JACK)
+        # failed test case
+        self.game_state.trick_cards = {
+            2: Card(Card.SUIT_DIAMONDS, Card.JACK),
+            3: Card(Card.SUIT_DIAMONDS, Card.KING),
+            0: Card(Card.SUIT_CLUBS, Card.ACE),
+            1: Card(Card.SUIT_HEARTS, Card.KING)
+        }
+        self.game_state.trumps = Card.SUIT_HEARTS
+
+        winner = self.game_state.calc_winner()
+        self.assertEqual(winner, 2)
+
+        self.game_state.lead_card = Card(Card.SUIT_DIAMONDS, Card.JACK)
+
+        self.game_state.trumps = Card.SUIT_DIAMONDS
+        self.game_state.trick_cards = {
+            1: Card(Card.SUIT_DIAMONDS, Card.JACK),
+            2: Card(Card.SUIT_DIAMONDS, 10),
+            3: Card(Card.SUIT_HEARTS, Card.JACK),
+            0: Card(Card.SUIT_DIAMONDS, 9)
+        }
+
+        winner = self.game_state.calc_winner()
+        self.assertEqual(winner, 1)

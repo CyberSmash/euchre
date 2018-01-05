@@ -3,7 +3,7 @@ from Deck import Deck
 from GameState import GameState
 from random import randrange
 from Card import Card
-
+import logging
 
 class Table(object):
 
@@ -127,7 +127,7 @@ class Table(object):
         # Find the winner ID in the array. They aren't necessarally the same.
         for num, player in enumerate(self.players):
             if player.player_num == winner_id:
-                print("{} Won this trick".format(player.name))
+                logging.info("{} Won this trick".format(player.name))
                 self.game_state.lead_player = player
                 self.current_player_turn = num
                 player.hand_score += 1
@@ -190,7 +190,7 @@ class Table(object):
             self.reset_current_player()
 
         elif bid == Player.PASS:
-            print("Player {}: Passed.".format(current_player.name))
+            logging.info("Player {}: Passed.".format(current_player.name))
             if current_player == dealer:
                 self.game_state.set_state(GameState.BIDDING_RND_2)
             self.next_player()
@@ -210,7 +210,7 @@ class Table(object):
         dealer.receive_card([top_card])
 
         self.game_state.set_trumps(top_card.get_suit())
-        print("Player {}: Ordered up the {}. Trumps is now {}".format(self.current_player_turn,
+        logging.info("Player {}: Ordered up the {}. Trumps is now {}".format(self.current_player_turn,
                                                                       top_card, top_card.get_suit_str()))
         self.handle_loaner(current_player)
 
@@ -233,9 +233,9 @@ class Table(object):
             self.reset_current_player()
 
         if bid == Card.SUIT_NOSUIT:
-            print("{} has decided not to announce a Trumps".format(current_player.name))
+            logging.info("{} has decided not to announce a Trumps".format(current_player.name))
             if current_player == dealer:
-                print("The deal has been called Dead. It will be re-dealt.")
+                logging.info("The deal has been called Dead. It will be re-dealt.")
                 self.dead_deal()
             else:
                 self.next_player()
@@ -257,7 +257,7 @@ class Table(object):
             raise ValueError("{} tried to make a suit that doesn't exist {}. NOTE: This needs to be passed back"
                              "to the player somehow.".format(current_player.name, selected_suit))
 
-        print("{} has set {} as Trumps.".format(current_player.name, Card.suit_str(selected_suit)))
+        logging.info("{} has set {} as Trumps.".format(current_player.name, Card.suit_str(selected_suit)))
         self.handle_loaner(current_player)
 
     def handle_loaner(self, current_player: Player) -> bool:
@@ -277,7 +277,7 @@ class Table(object):
         teammate.sit_out()
 
         current_player.is_loaner(self.game_state)
-        print("{} has decided to go alone. {} will sit out of this round.".format(current_player.name, teammate.name))
+        logging.info("{} has decided to go alone. {} will sit out of this round.".format(current_player.name, teammate.name))
         return True
 
 

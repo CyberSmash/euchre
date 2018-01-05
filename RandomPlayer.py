@@ -3,11 +3,12 @@ from random import randrange, choice
 from GameState import GameState
 from Card import Card
 import copy
+import logging
 
 class RandomPlayer(Player):
 
-    CHANCE_OF_RND_1_BID = 8
-    CHANCE_OF_RND_2_BID = 8
+    CHANCE_OF_RND_1_BID = 4
+    CHANCE_OF_RND_2_BID = 4
     CHANCE_OF_LOANER = 32
 
     def make_move(self, game_state: GameState):
@@ -15,7 +16,7 @@ class RandomPlayer(Player):
         card = choice(self.hand)
         while not game_state.is_valid_play(card, self.hand):
             card = choice(self.hand)
-        print("{} plays {}".format(self.name, card))
+        logging.info("{} plays {}".format(self.name, card))
         self.hand.remove(card)
         return card
 
@@ -55,8 +56,8 @@ class RandomPlayer(Player):
 
         suits = copy.copy(Card.SUITS) # a little slow, but readable. Necessary so we don't all modify the same list.
         invalid_suit = game_state.top_card.get_suit()
-        print("Removing Suit: {}".format(invalid_suit))
-        print("Suits: {}".format(suits))
+        logging.info("Removing Suit: {}".format(invalid_suit))
+        logging.info("Suits: {}".format(suits))
         suits.remove(invalid_suit)
 
         picked_suit = choice(suits)

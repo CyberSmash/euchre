@@ -59,13 +59,23 @@ class Card(object):
         """
         Determine the color of the suit.
 
-        The return values map to the constants Card.COLOR_BLACK and Card.COLOR_RED
+        This will also appropriately assign the trump suit to the left bower if this card
+        is the left bower.
 
+        The return values map to the constants Card.COLOR_BLACK and Card.COLOR_RED
+        :param: trump_suit If set we will check against the trump suit to determine if our card is the left bower
         :return: 0 if the suit is black 1 if the suit is red.
         """
         return suit % 2
 
-    def get_suit(self) -> int:
+    def get_suit(self, trump_suit=None) -> int:
+        if trump_suit is not None and self.value == Card.JACK:
+            matching_suit = self.get_matching(trump_suit)
+            if self.suit == matching_suit:
+                return trump_suit
+        return self.suit
+
+    def get_raw_suit(self):
         return self.suit
 
     def set_value(self, new_val: int):
@@ -75,7 +85,6 @@ class Card(object):
         self.suit = new_suit
 
     def get_value_str(self) -> str:
-        out_str = ""
         if self.value == None:
             return "None"
 
@@ -99,8 +108,25 @@ class Card(object):
 
         return "Unk"
 
-    def get_suit_str(self) -> str:
-        return self.suit_str(self.suit)
+    def get_matching(self, suit):
+        if suit == Card.SUIT_CLUBS:
+            return Card.SUIT_SPADES
+
+        if suit == Card.SUIT_SPADES:
+            return Card.SUIT_CLUBS
+
+        if suit == Card.SUIT_HEARTS:
+            return Card.SUIT_DIAMONDS
+
+        if suit == Card.SUIT_DIAMONDS:
+            return Card.SUIT_HEARTS
+
+    def get_suit_str(self, short: bool=False) -> str:
+        if (short):
+            return self.suit_str(self.suit)
+        else:
+            return self.suit_str_long(self.suit)
+
 
     @staticmethod
     def suit_str(suit: int) -> str:
@@ -115,5 +141,17 @@ class Card(object):
 
         return "Unk"
 
+    @staticmethod
+    def suit_str_long(suit: int) -> str:
+        if suit == Card.SUIT_SPADES:
+            return "SPADES"
+        elif suit == Card.SUIT_DIAMONDS:
+            return "DIAMONDS"
+        elif suit == Card.SUIT_CLUBS:
+            return "CLUBS"
+        elif suit == Card.SUIT_HEARTS:
+            return "HEARTS"
+
+
     def __repr__(self):
-        return "{}{}".format(self.get_value_str(), self.get_suit_str())
+        return "{}{}".format(self.get_value_str(), self.get_suit_str(short=True))

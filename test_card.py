@@ -1,10 +1,9 @@
 from unittest import TestCase
 from Card import Card
 
+
 class TestCard(TestCase):
-
     def test_get_total_value(self):
-
         # Test the right bower
         c = Card(Card.SUIT_CLUBS, Card.JACK)
         card_value = c.get_total_value(Card.SUIT_CLUBS, Card.SUIT_DIAMONDS)
@@ -36,7 +35,6 @@ class TestCard(TestCase):
         card_value = c.get_total_value(Card.SUIT_SPADES, Card.SUIT_SPADES)
         self.assertEqual(card_value, 100 + Card.QUEEN)
 
-
     def test_get_color(self):
         c = Card(Card.SUIT_CLUBS, Card.JACK)
         color = c.get_color(c.suit)
@@ -54,3 +52,11 @@ class TestCard(TestCase):
         color = c.get_color(c.suit)
         self.assertEqual(color, Card.COLOR_RED)
 
+
+class TestCard(TestCase):
+    def test_get_suit(self):
+        newCard = Card(Card.SUIT_CLUBS, Card.JACK)
+
+        self.assertEqual(newCard.get_suit(Card.SUIT_CLUBS), Card.SUIT_CLUBS)
+        self.assertEqual(newCard.get_suit(Card.SUIT_SPADES), Card.SUIT_SPADES)
+        self.assertEqual(newCard.get_suit(), Card.SUIT_CLUBS)
