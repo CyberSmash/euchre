@@ -39,10 +39,12 @@ class GameState(object):
         :return: The player number of the winner.
         """
         # This isn't an efficient way to do this, but it works.
-        best_card = 0
-        best_player = -1
+        best_card = self.lead_card.get_total_value(self.trumps, self.lead_card.suit)
+        best_player = self.lead_player.player_num
+        #logging.info("Card Value {}:{}".format("lead", best_card))
         for player_num, card in self.trick_cards.items():
             current_card_val = card.get_total_value(self.trumps, self.lead_card.suit)
+            #logging.info("Card Value {}:{}".format(player_num, current_card_val))
             if best_card < current_card_val:
                 best_card = current_card_val
                 best_player = player_num
@@ -155,6 +157,8 @@ class GameState(object):
         :return: True if the card is a valid one. False otherwise.
         """
         if self.lead_card is None:
+            # Save as the lead card
+            self.lead_card = played_card
             # Person who plays first can play anything...
             return True
 

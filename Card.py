@@ -33,24 +33,23 @@ class Card(object):
         color = self.get_color(self.suit)
         trump_color = self.get_color(trump_suit)
 
-        ret_val = 0
+        ret_val = self.value
+
+        # Player followed suit, but it is not a trump suit.
         if self.suit == lead_suit and trump_suit != lead_suit:
-            ret_val += self.value
+            ret_val += 100
 
-        if color == trump_color:
-            # We at least have the same color as trump. Lets determine if it's a jack
+        # Player does not have a bauer but does have a trump suit card.
+        if self.value != Card.JACK and self.suit == trump_suit:
+            ret_val += 500
+
+        # Player has a bauer
+        if self.value == Card.JACK and color == trump_color:
+            # we have a jack and a bauer.
             if self.suit == trump_suit:
-                if self.value == Card.JACK:
-                    # We have the right bower
-                    ret_val += 2000 + self.value
-                else:
-                    # We have a trump, but not the right bower
-                    ret_val += 100 + self.value
-
-            elif self.suit != trump_suit and self.value == Card.JACK:
-                # We don't have the same suit, but the same color, and we have the Jack, This is the left bower.
-                ret_val += 1000 + self.value
-
+                ret_val += 2000
+            if self.suit != trump_suit:
+                ret_val += 1000
 
         return ret_val
 

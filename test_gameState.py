@@ -10,6 +10,7 @@ class TestGameState(TestCase):
 
 
     def test_calc_winnner(self):
+
         # No trumps
         self.game_state.lead_card = Card(Card.SUIT_HEARTS, Card.ACE)
         self.game_state.trick_cards = {
@@ -59,6 +60,7 @@ class TestGameState(TestCase):
             2: Card(Card.SUIT_DIAMONDS, 10),
             3: Card(Card.SUIT_HEARTS, 9)
         }
+
         winner = self.game_state.calc_winner()
         self.assertEqual(winner, 2)
 
@@ -94,6 +96,33 @@ class TestGameState(TestCase):
             2: Card(Card.SUIT_DIAMONDS, 10),
             3: Card(Card.SUIT_HEARTS, Card.JACK),
             0: Card(Card.SUIT_DIAMONDS, 9)
+        }
+
+        winner = self.game_state.calc_winner()
+        self.assertEqual(winner, 1)
+
+        self.game_state.lead_card = Card(Card.SUIT_CLUBS, Card.QUEEN)
+        self.game_state.trumps = Card.SUIT_HEARTS
+        self.game_state.trick_cards = {
+            3: Card(Card.SUIT_CLUBS, Card.QUEEN),
+            0: Card(Card.SUIT_CLUBS, Card.JACK),
+            1: Card(Card.SUIT_CLUBS, 9),
+            2: Card(Card.SUIT_CLUBS, 10),
+        }
+
+        res = self.game_state.trick_cards[0].get_total_value(self.game_state.trumps, Card.SUIT_CLUBS)
+        self.assertEqual(res, 11)
+        winner = self.game_state.calc_winner()
+        self.assertEqual(winner, 3)
+
+
+        self.game_state.lead_card = Card(Card.SUIT_SPADES, Card.ACE)
+        self.game_state.trumps = Card.SUIT_HEARTS
+        self.game_state.trick_cards = {
+            1: Card(Card.SUIT_SPADES, Card.ACE),
+            2: Card(Card.SUIT_SPADES, Card.KING),
+            3: Card(Card.SUIT_SPADES, 9),
+            0: Card(Card.SUIT_SPADES, Card.JACK)
         }
 
         winner = self.game_state.calc_winner()

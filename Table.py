@@ -124,6 +124,7 @@ class Table(object):
         :return:
         """
         winner_id = self.game_state.calc_winner()
+
         # Find the winner ID in the array. They aren't necessarally the same.
         for num, player in enumerate(self.players):
             if player.player_num == winner_id:
