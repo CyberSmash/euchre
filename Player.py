@@ -61,5 +61,10 @@ class Player(object):
     def is_sitting_out(self):
         return self.sitting_out
 
+    def reset(self):
+        self.clear_hand()
+        self.sitting_out = False
+        self.going_alone = False
+
     def __repr__(self):
         return "Name: {} Team {} Hand: {}".format(self.name, self.team_id, self.hand)

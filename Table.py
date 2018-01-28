@@ -4,20 +4,32 @@ from GameState import GameState
 from random import randrange
 from Card import Card
 import logging
+from enum import Enum
+
+class GameType(Enum):
+    # Progressive plays for 8 hands. For X rounds, regardless of score
+    PROGRESSIVE = 0
+
+    # Traditional is played first to 10 points.
+    TRADITIONAL = 1
+
 
 class Table(object):
 
     TEAM_A = 0
     TEAM_B = 1
 
-    def __init__(self, player_type: type(Player)):
+    def __init__(self, player_type: type(Player), game_type: GameType=GameType.PROGRESSIVE):
 
         self.players = [player_type(0, Table.TEAM_A, "Player-0"),
                         player_type(1, Table.TEAM_B, "Player-1"),
                         player_type(2, Table.TEAM_A, "Player-2"),
                         player_type(3, Table.TEAM_B, "Player-3")]
 
-        self.scores = [0, 0] # Indexed using TEAM_A and TEAM_B
+        self.game_type = game_type
+
+        self.scores = [0, 0]        # Indexed using TEAM_A and TEAM_B
+        self.tricks_won = [0, 0]    # Indexed using TEAM_A and TEAM_B
 
         self.deck = Deck()
         self.game_state = GameState()
@@ -28,6 +40,9 @@ class Table(object):
         self.current_player_turn = (self.current_dealer + 1) % len(self.players)
 
         self.game_state.set_state(GameState.DEAL)
+
+        self.loaner_team = None
+        self.loaner_player = None
 
     def next_player(self):
         """
@@ -64,8 +79,12 @@ class Table(object):
 
         elif self.game_state.is_trick_middle():
             self.trick_middle()
+
         elif self.game_state.is_trick_end():
             self.trick_end()
+
+        elif self.game_state.is_hand_end():
+            self.hand_end()
 
         elif self.game_state.is_end():
             raise Exception("Game State not yet implemented.")
@@ -79,6 +98,7 @@ class Table(object):
         """
         self.reset_current_player() # Set up so that we play with the next player being to the left of the dealer.
         self.game_state.lead_player = None
+        self.deck.shuffle_deck()
         self.game_state.set_state(GameState.TRICK_START)
 
     def trick_start(self):
@@ -132,15 +152,47 @@ class Table(object):
                 self.game_state.lead_player = player
                 self.current_player_turn = num
                 player.hand_score += 1
+                self.tricks_won[player.team_id] += 1
+
                 break
 
         self.game_state.reset_trick()
         self.game_state.trick_num += 1
 
-        if self.game_state.trick_num == 5:
+        if self.game_state.trick_num >= 5:
             self.game_state.set_state(GameState.HAND_END)
         else:
-            self.game_state.set_state(GameState.TRICK_START)
+            self.game_state.set_state(GameState.HAND_BEGIN)
+
+    def hand_end(self):
+        # Determine the winner
+        defending_team = self.game_state.defending_team
+        bidding_team = self.game_state.bidding_team
+
+        if self.tricks_won[bidding_team] == 3 or self.tricks_won[bidding_team] == 4:
+            # Whether the bidding team goes alone or not, if they get 3 or 4 tricks they only get a point.
+            self.scores[bidding_team] += 1
+        elif self.tricks_won[bidding_team] == 5:
+            if self.loaner_team is not None and bidding_team == self.loaner_team:
+                self.scores[bidding_team] += 4
+            else:
+                self.scores[bidding_team] += 2
+
+        elif self.tricks_won[defending_team] == 3 or self.tricks_won[bidding_team] == 4:
+            self.scores[defending_team] += 2
+        logging.info("The defending(team {}) team won {} tricks.".format(defending_team, self.tricks_won[defending_team]))
+        logging.info("The bidding team(team {}) won {} tricks.".format(bidding_team, self.tricks_won[bidding_team]))
+        logging.info("The Score is now: TEAM A: {} to TEAM B: {}".format(self.scores[self.TEAM_A],
+                                                                         self.scores[self.TEAM_B]))
+
+        self.game_state.set_state(GameState.DEAL)
+        # Reset the trick scores
+        self.tricks_won = [0, 0]
+        self.loaner_team = None
+        self.loaner_player = None
+        self.game_state.trick_num = 0 # @todo: This should be handled by a reset function in game state, not here.
+        for player in self.players:
+            player.reset()
 
     def player_move(self, current_player: Player):
         """
@@ -189,7 +241,8 @@ class Table(object):
             self.handle_bid(current_player, dealer)
             self.game_state.set_state(GameState.TRICK_START)
             self.reset_current_player()
-
+            self.game_state.bidding_team = current_player.team_id
+            self.game_state.defending_team = (current_player.team_id + 1) % 2
         elif bid == Player.PASS:
             logging.info("Player {}: Passed.".format(current_player.name))
             if current_player == dealer:
@@ -213,7 +266,10 @@ class Table(object):
         self.game_state.set_trumps(top_card.get_suit())
         logging.info("Player {}: Ordered up the {}. Trumps is now {}".format(self.current_player_turn,
                                                                       top_card, top_card.get_suit_str()))
-        self.handle_loaner(current_player)
+        is_loaner = self.handle_loaner(current_player)
+        if is_loaner:
+            self.loaner_team = current_player.team_id
+            self.loaner_player = current_player
 
     def handle_bidding_rnd_2(self):
         """

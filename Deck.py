@@ -4,13 +4,17 @@ from random import randrange
 class Deck(object):
 
     def __init__(self):
+        self.deck = list()
         self.init_deck()
 
     def init_deck(self):
-        self.deck = list()
         for suit in Card.SUITS:
             for val in Card.VALUES:
                 self.deck.append(Card(suit=suit, value=val))
+
+    def shuffle_deck(self):
+        self.deck = list()
+        self.init_deck()
 
     def deal(self, num: int=1) -> list:
         """
@@ -24,7 +28,7 @@ class Deck(object):
 
         cards = list()
         if self.deck_is_empty(num):
-            return None
+            return list()
 
         for x in range(0, num):
             card = None

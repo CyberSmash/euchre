@@ -1,17 +1,17 @@
-from Deck import Deck
 from Card import Card
-from typing import List
 import logging
+
+
 class GameState(object):
 
     DEAL = 0
     BIDDING_RND_1 = 1
     BIDDING_RND_2 = 2
-    HAND_BEGIN = 3 # This is the beginning of a hand after bidding
-    TRICK_START = 4 # This is a the beginning of a new trick, Leading player plays.
-    TRICK_MIDDLE = 5 # All other tricks are played here
-    TRICK_END = 6 # This is the end of a trick. Nothing is played
-    HAND_END = 7 # This is the end of a hand before either GAME_END or DEAL
+    HAND_BEGIN = 3      # This is the beginning of a hand after bidding
+    TRICK_START = 4     # This is a the beginning of a new trick, Leading player plays.
+    TRICK_MIDDLE = 5    # All other tricks are played here
+    TRICK_END = 6       # This is the end of a trick. Nothing is played
+    HAND_END = 7        # This is the end of a hand before either GAME_END or DEAL
     GAME_END = 8
 
     def __init__(self):
@@ -41,10 +41,10 @@ class GameState(object):
         # This isn't an efficient way to do this, but it works.
         best_card = self.lead_card.get_total_value(self.trumps, self.lead_card.suit)
         best_player = self.lead_player.player_num
-        #logging.info("Card Value {}:{}".format("lead", best_card))
+
         for player_num, card in self.trick_cards.items():
             current_card_val = card.get_total_value(self.trumps, self.lead_card.suit)
-            #logging.info("Card Value {}:{}".format(player_num, current_card_val))
+
             if best_card < current_card_val:
                 best_card = current_card_val
                 best_player = player_num
@@ -53,7 +53,6 @@ class GameState(object):
 
     def reset_trick(self):
         self.lead_card = None
-        #self.played_cards += self.trick_cards
         self.trick_cards = dict()
 
     def set_state(self, new_state: int):
@@ -85,7 +84,7 @@ class GameState(object):
         return self.state == GameState.GAME_END
 
     def is_loaners(self):
-        return self.state == GameState.LOANERS
+        raise Exception("Not yet implemented.")
 
     def is_hand_begin(self):
         return self.state == GameState.HAND_BEGIN
