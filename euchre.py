@@ -14,7 +14,7 @@ def print_player_hands(players):
 
 
 def main():
-    logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+    logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename="gamelog.txt")
 
     t = Table(player_type=RandomPlayer)
     while t.game_state.get_state() != GameState.BIDDING_RND_1:

@@ -63,10 +63,11 @@ class Table(object):
         """
 
         if self.game_state.is_deal():
+            logging.info("Dealer is player {}".format(self.current_dealer))
             self.deal_cards()
             self.game_state.set_top_card(self.deck.deal_one())
             self.game_state.set_state(GameState.BIDDING_RND_1)
-            return GameState.DEAL
+            self.reset_current_player()
 
         elif self.game_state.is_bidding():
             self.bid_step()
@@ -104,6 +105,14 @@ class Table(object):
     def trick_start(self):
 
         # In this case, this would be the first trick of the hand. Get the player to the left of the dealer.
+        current_player = self.get_current_player()
+        while current_player.is_sitting_out():
+            self.next_player()
+            current_player = self.get_current_player()
+
+        # reset the lead player.
+        lead_player = current_player
+        """
         if self.game_state.lead_player is None:
             current_player = self.get_current_player()
             while current_player.is_sitting_out():
@@ -111,7 +120,7 @@ class Table(object):
                 current_player = self.get_current_player()
         else:
             current_player = self.game_state.lead_player
-
+        """
         card = current_player.make_move(self.game_state)
         if not self.game_state.is_valid_play(card, current_player.hand):
             raise ValueError("{} chose an invalid card to play. {}".format(current_player.name, card))
@@ -188,11 +197,15 @@ class Table(object):
         self.game_state.set_state(GameState.DEAL)
         # Reset the trick scores
         self.tricks_won = [0, 0]
-        self.loaner_team = None
-        self.loaner_player = None
-        self.game_state.trick_num = 0 # @todo: This should be handled by a reset function in game state, not here.
+
+        # This must happen before move_dealer or the correct dealer will not get set.
         for player in self.players:
             player.reset()
+
+        self.loaner_team = None
+        self.loaner_player = None
+        self.move_dealer()
+        self.game_state.trick_num = 0 # @todo: This should be handled by a reset function in game state, not here.
 
     def player_move(self, current_player: Player):
         """
@@ -346,7 +359,7 @@ class Table(object):
         """
         for player in self.players:
             player.clear_hand()
-            self.deck.init_deck()
+        self.deck.shuffle_deck()
         self.game_state.set_state(GameState.DEAL)
         self.current_player_turn = (self.current_dealer + 1) % len(self.players)
 
@@ -397,8 +410,9 @@ class Table(object):
         Pass the deal to the next dealer.
         :return:
         """
+        self.players[self.current_dealer].set_not_dealer()
         self.current_dealer = (self.current_dealer + 1) % len(self.players)
-
+        self.players[self.current_dealer].set_dealer()
 
     def deal_cards(self):
         two_cards = True
