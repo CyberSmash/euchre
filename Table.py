@@ -1,7 +1,7 @@
 from Player import Player
 from Deck import Deck
 from GameState import GameState
-from random import randrange
+from secrets import randbelow, choice
 from Card import Card
 import logging
 from enum import Enum
@@ -34,15 +34,17 @@ class Table(object):
         self.deck = Deck()
         self.game_state = GameState()
 
-        self.current_dealer = randrange(0, 3)
+        self.current_dealer = randbelow(len(self.players))
         self.players[self.current_dealer].set_dealer()
 
         self.current_player_turn = (self.current_dealer + 1) % len(self.players)
 
-        self.game_state.set_state(GameState.DEAL)
+        self.game_state.set_state(GameState.GAME_START)
 
         self.loaner_team = None
         self.loaner_player = None
+
+        self.num_hands = 0
 
     def next_player(self):
         """
@@ -62,12 +64,11 @@ class Table(object):
         :return:
         """
 
-        if self.game_state.is_deal():
-            logging.info("Dealer is player {}".format(self.current_dealer))
-            self.deal_cards()
-            self.game_state.set_top_card(self.deck.deal_one())
-            self.game_state.set_state(GameState.BIDDING_RND_1)
-            self.reset_current_player()
+        if self.game_state.is_game_start():
+            self.handle_game_start()
+
+        elif self.game_state.is_deal():
+            self.handle_game_start()
 
         elif self.game_state.is_bidding():
             self.bid_step()
@@ -82,15 +83,34 @@ class Table(object):
             self.trick_middle()
 
         elif self.game_state.is_trick_end():
-            self.trick_end()
+            self.handle_trick_end()
 
         elif self.game_state.is_hand_end():
-            self.hand_end()
+            self.handle_hand_end()
 
         elif self.game_state.is_end():
-            raise Exception("Game State not yet implemented.")
-        else:
-            raise Exception("Step into an unknown game state {}".format(self.game_state.get_state()))
+            self.handle_game_end()
+
+    def handle_game_start(self):
+        """
+        This is a placeholder for the beginning of a game.
+        :return:
+        """
+
+        self.num_hands = 0
+        self.game_state.set_state(GameState.DEAL)
+
+    def handle_game_start(self):
+        """
+        This function handles the dealing of the cards. It is where
+        all play of a hand begins.
+        :return:
+        """
+        logging.info("Dealer is player {}".format(self.current_dealer))
+        self.deal_cards()
+        self.game_state.set_top_card(self.deck.deal_one())
+        self.reset_current_player() # ensure the first player is to the left of the dealer.
+        self.game_state.set_state(GameState.BIDDING_RND_1)
 
     def hand_begin(self):
         """
@@ -143,7 +163,7 @@ class Table(object):
         self.player_move(current_player)
         self.next_player()
 
-    def trick_end(self):
+    def handle_trick_end(self):
         """
         The end of the trick, after all players have played.
 
@@ -162,7 +182,6 @@ class Table(object):
                 self.current_player_turn = num
                 player.hand_score += 1
                 self.tricks_won[player.team_id] += 1
-
                 break
 
         self.game_state.reset_trick()
@@ -173,7 +192,7 @@ class Table(object):
         else:
             self.game_state.set_state(GameState.HAND_BEGIN)
 
-    def hand_end(self):
+    def handle_hand_end(self):
         # Determine the winner
         defending_team = self.game_state.defending_team
         bidding_team = self.game_state.bidding_team
@@ -193,8 +212,6 @@ class Table(object):
         logging.info("The bidding team(team {}) won {} tricks.".format(bidding_team, self.tricks_won[bidding_team]))
         logging.info("The Score is now: TEAM A: {} to TEAM B: {}".format(self.scores[self.TEAM_A],
                                                                          self.scores[self.TEAM_B]))
-
-        self.game_state.set_state(GameState.DEAL)
         # Reset the trick scores
         self.tricks_won = [0, 0]
 
@@ -202,10 +219,20 @@ class Table(object):
         for player in self.players:
             player.reset()
 
+        self.num_hands += 1
         self.loaner_team = None
         self.loaner_player = None
         self.move_dealer()
         self.game_state.trick_num = 0 # @todo: This should be handled by a reset function in game state, not here.
+
+        if self.game_type == GameType.TRADITIONAL and (self.scores[self.TEAM_A] >= 10 or self.scores[self.TEAM_B] >= 10):
+            self.game_state.set_state(GameState.GAME_END)
+
+        elif self.game_type == GameType.PROGRESSIVE and self.num_hands >= 8:
+            self.game_state.set_state(GameState.GAME_END)
+
+        else:
+            self.game_state.set_state(GameState.DEAL)
 
     def player_move(self, current_player: Player):
         """
@@ -300,6 +327,7 @@ class Table(object):
             self.game_state.set_trumps(bid)
             self.game_state.set_state(GameState.TRICK_START)
             self.game_state.bidding_team = current_player.team_id
+            self.game_state.defending_team = (current_player.team_id + 1) % 2
             self.reset_current_player()
 
         if bid == Card.SUIT_NOSUIT:
@@ -350,6 +378,17 @@ class Table(object):
         logging.info("{} has decided to go alone. {} will sit out of this round.".format(current_player.name, teammate.name))
         return True
 
+    def handle_game_end(self):
+        """
+        This handle all the cleanup of the end of the game
+        :return:
+        """
+        logging.info("Scores: TEAM A: {}, TEAM B: {}".format(self.scores[self.TEAM_A], self.scores[self.TEAM_B]))
+
+        self.tricks_won = [0,0]
+        self.score = [0, 0]
+        self.deck.shuffle_deck()
+        self.game_state.set_state(GameState.GAME_START)
 
     def dead_deal(self):
         """

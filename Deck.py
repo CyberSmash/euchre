@@ -1,5 +1,5 @@
 from Card import Card
-from random import randrange
+from secrets import randbelow, choice
 
 class Deck(object):
 
@@ -37,8 +37,7 @@ class Deck(object):
             idx = 0
             card = None
             while card is None:
-                idx = randrange(0, len(self.deck))
-                card = self.deck[idx]
+                card = choice(self.deck)
 
             self.deck[idx] = None
             cards.append(card)

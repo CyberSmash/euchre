@@ -1,5 +1,5 @@
 from Player import Player
-from random import randrange, choice
+from secrets import randbelow, choice
 from GameState import GameState
 from Card import Card
 import copy
@@ -26,7 +26,7 @@ class RandomPlayer(Player):
 
         :return: True if the player orders it up / assists False if they pass
         """
-        val = randrange(0, RandomPlayer.CHANCE_OF_RND_1_BID)
+        val = randbelow(RandomPlayer.CHANCE_OF_RND_1_BID)
         if val == 0:
             # Order up
             return Player.ORDER_UP
@@ -42,7 +42,7 @@ class RandomPlayer(Player):
         :param game_state: The GameState object
         :return: True of he player will go alone. False otherwise.
         """
-        val = randrange(0, RandomPlayer.CHANCE_OF_LOANER)
+        val = randbelow(RandomPlayer.CHANCE_OF_LOANER)
         if val == 0:
             self.going_alone = True
             self.is_out = False
@@ -50,7 +50,7 @@ class RandomPlayer(Player):
 
     def make_bid_rnd_2(self, game_state: GameState) -> int:
 
-        pick_suit = randrange(0, RandomPlayer.CHANCE_OF_RND_2_BID)
+        pick_suit = randbelow(RandomPlayer.CHANCE_OF_RND_2_BID)
         if pick_suit != 0:
             return Card.SUIT_NOSUIT
 
@@ -64,7 +64,7 @@ class RandomPlayer(Player):
         return picked_suit
 
     def discard(self, game_state: GameState) -> Card:
-        idx = randrange(0, len(self.hand))
+        idx = randbelow(len(self.hand)) # plus one here because randbelow is exclusive.
         discard = self.hand[idx]
         del self.hand[idx] # @TODO: I'm not iterating...does this have consequences?
         return discard

@@ -22,11 +22,14 @@ def main():
 
     print_player_hands(t.players)
 
-    #while t.game_state.get_state() != GameState.HAND_END:
-    while 1:
+    # Play one full game.
+    while True:
         if t.game_state.get_state() == GameState.TRICK_START:
             print_player_hands(t.players)
         t.step_game()
+
+        if t.game_state.get_state() == GameState.GAME_START:
+            break
 
     logging.info(t.get_dealer())
 

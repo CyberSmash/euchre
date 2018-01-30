@@ -4,15 +4,16 @@ import logging
 
 class GameState(object):
 
-    DEAL = 0
-    BIDDING_RND_1 = 1
-    BIDDING_RND_2 = 2
-    HAND_BEGIN = 3      # This is the beginning of a hand after bidding
-    TRICK_START = 4     # This is a the beginning of a new trick, Leading player plays.
-    TRICK_MIDDLE = 5    # All other tricks are played here
-    TRICK_END = 6       # This is the end of a trick. Nothing is played
-    HAND_END = 7        # This is the end of a hand before either GAME_END or DEAL
-    GAME_END = 8
+    GAME_START = 0
+    DEAL = 1
+    BIDDING_RND_1 = 2
+    BIDDING_RND_2 = 3
+    HAND_BEGIN = 4      # This is the beginning of a hand after bidding
+    TRICK_START = 5     # This is a the beginning of a new trick, Leading player plays.
+    TRICK_MIDDLE = 6    # All other tricks are played here
+    TRICK_END = 7       # This is the end of a trick. Nothing is played
+    HAND_END = 8        # This is the end of a hand before either GAME_END or DEAL
+    GAME_END = 9
 
     def __init__(self):
         """
@@ -64,6 +65,9 @@ class GameState(object):
 
     def get_state(self) -> int:
         return self.state
+
+    def is_game_start(self) -> bool:
+        return self.state == GameState.GAME_START
 
     def is_bidding(self) -> bool:
         return self.state == GameState.BIDDING_RND_1 or self.state == GameState.BIDDING_RND_2
@@ -126,6 +130,9 @@ class GameState(object):
         :param state:
         :return:
         """
+        if state == GameState.GAME_START:
+            return "GAME START"
+
         if state == GameState.DEAL:
             return "DEAL"
         if state == GameState.BIDDING_RND_1:
@@ -145,7 +152,7 @@ class GameState(object):
         if state == GameState.TRICK_END:
             return "TRICK END"
         if state == GameState.GAME_END:
-            return "END"
+            return "GAME END"
 
     def is_valid_play(self, played_card: Card, player_hand: list) -> bool:
         """
