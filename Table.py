@@ -473,4 +473,6 @@ class Table(object):
 
                 self.players[p].receive_card(cards)
 
-
+    def print_player_hands(self):
+        for player in self.players:
+            logging.info(player)

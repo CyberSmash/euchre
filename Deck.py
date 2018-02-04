@@ -32,14 +32,11 @@ class Deck(object):
 
         for x in range(0, num):
             card = None
-
             # Loop until we have a valid card.
-            idx = 0
-            card = None
             while card is None:
                 card = choice(self.deck)
 
-            self.deck[idx] = None
+            self.deck = [c for c in self.deck if c != card]
             cards.append(card)
 
         return cards

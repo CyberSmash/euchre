@@ -5,6 +5,7 @@ from Card import Card
 import copy
 import logging
 
+
 class RandomPlayer(Player):
 
     CHANCE_OF_RND_1_BID = 4
