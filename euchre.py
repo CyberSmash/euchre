@@ -2,14 +2,15 @@ from Simulator import Simulator
 from Table import GameType
 from RandomPlayer import RandomPlayer
 import logging
-
-FORMAT = "[%(levelname)s] %(message)s"
-
+import pymongo
+import sys
+from euchre import db
 
 def main():
-    logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename="gamelog.txt")
-
-    sim = Simulator(GameType.TRADITIONAL, 100, RandomPlayer)
+    # @todo: this may not be necessary in the future.
+    db.choices.delete_many({})
+    print("Type of mongodb: {}".format(type(db)))
+    sim = Simulator(GameType.TRADITIONAL, 10, RandomPlayer)
     sim.run()
 
 
