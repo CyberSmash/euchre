@@ -4,7 +4,7 @@ from GameState import GameState
 from Card import Card
 import copy
 import logging
-
+import db
 
 class RandomPlayer(Player):
 
@@ -15,9 +15,27 @@ class RandomPlayer(Player):
     def make_move(self, game_state: GameState):
         # Randomly pick a card.
         card = choice(self.hand)
-        while not game_state.is_valid_play(card, self.hand):
-            card = choice(self.hand)
+        valid_plays = game_state.get_valid_plays(self.hand)
+        card = choice(valid_plays)
+
         logging.info("{} plays {}".format(self.name, card))
+
+        dbase = db.get_stats_db()
+        dbase.choices.insert_one(
+            {
+                "strategy": "random",
+                "is_lead": game_state.lead_player.player_num == self.player_num,
+                "is_alone": self.going_alone,
+                "num_choices": len(valid_plays),
+                "num_cards": len(self.hand),
+                "game_state": {
+                    "hand_num": game_state.num_hands,
+                    "trick_num": game_state.trick_num,
+                    "game_num": game_state.game_id
+
+                }
+            })
+
         self.hand.remove(card)
         return card
 

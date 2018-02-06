@@ -1,6 +1,6 @@
 from Card import Card
 import logging
-
+from secrets import randbelow
 
 class GameState(object):
 
@@ -15,7 +15,7 @@ class GameState(object):
     HAND_END = 8        # This is the end of a hand before either GAME_END or DEAL
     GAME_END = 9
 
-    def __init__(self):
+    def __init__(self, game_id: int):
         """
         Constructor. Nothing special.
         """
@@ -32,6 +32,10 @@ class GameState(object):
         self.lead_player = None
         self.played_cards = list()
         self.trick_num = 0
+        self.game_id = game_id
+        self.num_hands = 0
+
+        self.current_dealer = randbelow(4)
 
     def calc_winner(self):
         """

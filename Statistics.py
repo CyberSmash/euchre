@@ -10,10 +10,11 @@ class HandStatistics(Statistics):
 
     def __init__(self):
         self.num_choices = 0
-        self.num_tricks = 0
+        self.count = 0
 
     def add_num_choices(self, choices):
         self.num_choices += choices
+        self.count += 1
 
     def calc_average_choices(self):
-        return self.num_choices / self.num_tricks
+        return self.num_choices / self.count

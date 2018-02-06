@@ -1,6 +1,7 @@
 from Card import Card
 from GameState import GameState
 
+
 class Player(object):
 
     ORDER_UP = True
