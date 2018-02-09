@@ -1,31 +1,21 @@
 from Player import Player
 from Deck import Deck
 from GameState import GameState
-from secrets import randbelow, choice
 from Card import Card
 import logging
 from enum import Enum
-import db
-
-class GameType(Enum):
-    # Progressive plays for 8 hands. For X rounds, regardless of score
-    PROGRESSIVE = 0
-
-    # Traditional is played first to 10 points.
-    TRADITIONAL = 1
-
+import EuchreDatabase
+from enums import GameType
+from enums import Teams
 
 class Table(object):
 
-    TEAM_A = 0
-    TEAM_B = 1
-
     def __init__(self, player_type: type(Player), game_id: int, game_type: GameType=GameType.PROGRESSIVE):
 
-        self.players = [player_type(0, Table.TEAM_A, "Player-0"),
-                        player_type(1, Table.TEAM_B, "Player-1"),
-                        player_type(2, Table.TEAM_A, "Player-2"),
-                        player_type(3, Table.TEAM_B, "Player-3")]
+        self.players = [player_type(0, Teams.TEAM_A, "Player-0"),
+                        player_type(1, Teams.TEAM_B, "Player-1"),
+                        player_type(2, Teams.TEAM_A, "Player-2"),
+                        player_type(3, Teams.TEAM_B, "Player-3")]
 
         self.game_type = game_type
 
@@ -46,23 +36,6 @@ class Table(object):
 
         self.trick_obj = None
 
-        dbase = db.get_stats_db()
-        dbase.games.insert_one(
-            {
-                "id": game_id,
-                "type": game_type.name,
-            }
-        )
-
-    def next_player(self):
-        """
-        Increment the current player by one spot.
-        :return: Nothing.
-        """
-        self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
-        while self.players[self.current_player_turn].is_sitting_out():
-            self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
-
     def step_game(self):
         """
         Progress the game state by one step.
@@ -76,7 +49,7 @@ class Table(object):
             self.handle_game_start()
 
         elif self.game_state.is_deal():
-            self.handle_game_start()
+            self.handle_deal()
 
         elif self.game_state.is_bidding():
             self.bid_step()
@@ -101,23 +74,29 @@ class Table(object):
 
     def handle_game_start(self):
         """
-        This is a placeholder for the beginning of a game.
+        This is a placeholder for the beginning of a game. The entire state machine starts here.
+
         :return:
         """
 
         self.game_state.num_hands = 0
         self.game_state.set_state(GameState.DEAL)
+        EuchreDatabase.start_game(self.game_state, self.players, self.game_type)
 
-    def handle_game_start(self):
+    def handle_deal(self):
         """
         This function handles the dealing of the cards. It is where
         all play of a hand begins.
+
         :return:
         """
+
         logging.info("Dealer is player {}".format(self.game_state.current_dealer))
+
         self.deal_cards()
         self.game_state.set_top_card(self.deck.deal_one())
         self.reset_current_player() # ensure the first player is to the left of the dealer.
+        EuchreDatabase.record_deal(self.game_state, self.players)
         self.game_state.set_state(GameState.BIDDING_RND_1)
 
     def hand_begin(self):
@@ -147,8 +126,6 @@ class Table(object):
         card = current_player.make_move(self.game_state)
         if not self.game_state.is_valid_play(card, current_player.hand):
             raise ValueError("{} chose an invalid card to play. {}".format(current_player.name, card))
-
-        db.create_new_trick(self.game_state, current_player, card)
 
         self.game_state.lead_player = current_player
         self.game_state.lead_card = card
@@ -217,9 +194,9 @@ class Table(object):
 
         logging.info("The defending(team {}) team won {} tricks.".format(defending_team, self.tricks_won[defending_team]))
         logging.info("The bidding team(team {}) won {} tricks.".format(bidding_team, self.tricks_won[bidding_team]))
-        logging.info("The Score is now: TEAM A: {} to TEAM B: {}".format(self.scores[self.TEAM_A],
-                                                                         self.scores[self.TEAM_B]))
-        db.record_hand(self.game_state, self.tricks_won[defending_team], self.tricks_won[bidding_team], 0)
+        logging.info("The Score is now: TEAM A: {} to TEAM B: {}".format(self.scores[Teams.TEAM_A],
+                                                                         self.scores[Teams.TEAM_B]))
+
         # Reset the trick scores
         self.tricks_won = [0, 0]
 
@@ -233,7 +210,8 @@ class Table(object):
         self.move_dealer()
         self.game_state.trick_num = 0 # @todo: This should be handled by a reset function in game state, not here.
 
-        if self.game_type == GameType.TRADITIONAL and (self.scores[self.TEAM_A] >= 10 or self.scores[self.TEAM_B] >= 10):
+        if self.game_type == GameType.TRADITIONAL and (self.scores[Teams.TEAM_A] >= 10 or
+                                                       self.scores[Teams.TEAM_B] >= 10):
             self.game_state.set_state(GameState.GAME_END)
 
         elif self.game_type == GameType.PROGRESSIVE and self.game_state.num_hands >= 8:
@@ -259,7 +237,7 @@ class Table(object):
                             "invalid card to play.".format(current_player.name, card))
 
         self.game_state.trick_cards[current_player.player_num] = card
-        db.update_trick(self.game_state, current_player, card)
+        #db.update_trick(self.game_state, current_player, card)
 
     def bid_step(self):
         """
@@ -288,10 +266,11 @@ class Table(object):
 
         if bid == Player.ORDER_UP:
             self.handle_bid(current_player, dealer)
-            self.game_state.set_state(GameState.TRICK_START)
             self.reset_current_player()
             self.game_state.bidding_team = current_player.team_id
             self.game_state.defending_team = (current_player.team_id + 1) % 2
+            self.game_state.set_state(GameState.TRICK_START)
+
         elif bid == Player.PASS:
             logging.info("Player {}: Passed.".format(current_player.name))
             if current_player == dealer:
@@ -308,13 +287,17 @@ class Table(object):
         :param dealer: The dealer.
         :return: Nothing.
         """
+
         dealer.discard(self.game_state)
         top_card = self.game_state.give_top_card()
+        EuchreDatabase.record_trump(top_card.get_suit(), 1, current_player.name, top_card)
         dealer.receive_card([top_card])
 
-        self.game_state.set_trumps(top_card.get_suit())
         logging.info("Player {}: Ordered up the {}. Trumps is now {}".format(self.current_player_turn,
-                                                                      top_card, top_card.get_suit_str()))
+                                                                             top_card, top_card.get_suit_str()))
+
+        self.game_state.set_trumps(top_card.get_suit())
+
         is_loaner = self.handle_loaner(current_player)
         if is_loaner:
             self.loaner_team = current_player.team_id
@@ -332,12 +315,15 @@ class Table(object):
 
         bid = current_player.make_bid_rnd_2(self.game_state)
         if bid != Card.SUIT_NOSUIT:
+            EuchreDatabase.record_trump(bid, 2, current_player.name, None)
             self.handle_make(current_player, bid)
             self.game_state.set_trumps(bid)
             self.game_state.set_state(GameState.TRICK_START)
             self.game_state.bidding_team = current_player.team_id
             self.game_state.defending_team = (current_player.team_id + 1) % 2
             self.reset_current_player()
+
+
 
         if bid == Card.SUIT_NOSUIT:
             logging.info("{} has decided not to announce a Trumps".format(current_player.name))
@@ -392,12 +378,14 @@ class Table(object):
         This handle all the cleanup of the end of the game
         :return:
         """
-        logging.info("Scores: TEAM A: {}, TEAM B: {}".format(self.scores[self.TEAM_A], self.scores[self.TEAM_B]))
 
-        self.tricks_won = [0,0]
-        self.score = [0, 0]
+        logging.info("Scores: TEAM A: {}, TEAM B: {}".format(self.scores[Teams.TEAM_A], self.scores[Teams.TEAM_B]))
+        EuchreDatabase.end_game(self.game_state, self.scores[Teams.TEAM_A], self.scores[Teams.TEAM_B])
+        self.tricks_won = [0, 0]
+        self.scores = [0, 0]
         self.deck.shuffle_deck()
         self.game_state.set_state(GameState.GAME_START)
+
 
     def dead_deal(self):
         """
@@ -410,6 +398,7 @@ class Table(object):
         self.deck.shuffle_deck()
         self.game_state.set_state(GameState.DEAL)
         self.current_player_turn = (self.game_state.current_dealer + 1) % len(self.players)
+        EuchreDatabase.record_redeal(True)
 
 
     def reset_current_player(self):
@@ -481,6 +470,15 @@ class Table(object):
                 two_cards = not two_cards
 
                 self.players[p].receive_card(cards)
+
+    def next_player(self):
+        """
+        Increment the current player by one spot.
+        :return: Nothing.
+        """
+        self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
+        while self.players[self.current_player_turn].is_sitting_out():
+            self.current_player_turn = (self.current_player_turn + 1) % len(self.players)
 
     def print_player_hands(self):
         for player in self.players:

@@ -1,20 +1,21 @@
-class Statistics(object):
-
-    num_games = 0
-
-    def __init__(self):
-        pass
+import db
 
 
-class HandStatistics(Statistics):
+def main():
+    dbase = db.quick_setup()
+    b_wins = dbase.games.find({'winning_team': 1}).count()
+    a_wins = dbase.games.find({'winning_team': 0}).count()
+    ties = dbase.games.find({'winning_team': 2}).count()
 
-    def __init__(self):
-        self.num_choices = 0
-        self.count = 0
+    total_games = b_wins + a_wins + ties
 
-    def add_num_choices(self, choices):
-        self.num_choices += choices
-        self.count += 1
+    a_win_percent = (a_wins / total_games) * 100
+    b_win_percent = (b_wins / total_games) * 100
+    ties_percent = (ties / total_games) * 100
 
-    def calc_average_choices(self):
-        return self.num_choices / self.count
+    print("Team A won: {}% of the time.".format(a_win_percent))
+    print("Team B won: {}% of the time.".format(b_win_percent))
+    print("Ties: {}% of the time.".format(ties_percent))
+
+if __name__ == "__main__":
+    main()
