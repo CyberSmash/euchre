@@ -58,7 +58,7 @@ class Table(object):
             self.hand_begin()
 
         elif self.game_state.is_trick_start():
-            self.trick_start()
+            self.handle_trick_start()
 
         elif self.game_state.is_trick_middle():
             self.trick_middle()
@@ -92,7 +92,7 @@ class Table(object):
         """
 
         logging.info("Dealer is player {}".format(self.game_state.current_dealer))
-
+        self.deck.shuffle_deck()
         self.deal_cards()
         self.game_state.set_top_card(self.deck.deal_one())
         self.reset_current_player() # ensure the first player is to the left of the dealer.
@@ -108,12 +108,13 @@ class Table(object):
         self.deck.shuffle_deck()
         self.game_state.set_state(GameState.TRICK_START)
 
-    def trick_start(self):
+    def handle_trick_start(self):
         """
         Played when the trick starts
 
         :return:
         """
+        logging.info("Starting trick #{}".format(self.game_state.trick_num))
         # In this case, this would be the first trick of the hand. Get the player to the left of the dealer.
         current_player = self.get_current_player()
         while current_player.is_sitting_out():
@@ -129,6 +130,8 @@ class Table(object):
 
         self.game_state.lead_player = current_player
         self.game_state.lead_card = card
+
+        EuchreDatabase.record_trick(card, current_player, self.game_state.trick_num)
         self.game_state.set_state(GameState.TRICK_MIDDLE)
         self.next_player()  # Set up the next state so that it will have a valid player.
 
@@ -139,12 +142,12 @@ class Table(object):
         :return: Nothing.
         """
         current_player = self.get_current_player()
+
         if current_player == self.game_state.lead_player:
             self.game_state.set_state(GameState.TRICK_END)
-            return
-
-        self.player_move(current_player)
-        self.next_player()
+        else:
+            self.player_move(current_player)
+            self.next_player()
 
     def handle_trick_end(self):
         """
@@ -171,9 +174,10 @@ class Table(object):
         self.game_state.trick_num += 1
 
         if self.game_state.trick_num >= 5:
+            self.game_state.trick_num = 0
             self.game_state.set_state(GameState.HAND_END)
         else:
-            self.game_state.set_state(GameState.HAND_BEGIN)
+            self.game_state.set_state(GameState.TRICK_START)
 
     def handle_hand_end(self):
         # Determine the winner
@@ -237,7 +241,7 @@ class Table(object):
                             "invalid card to play.".format(current_player.name, card))
 
         self.game_state.trick_cards[current_player.player_num] = card
-        #db.update_trick(self.game_state, current_player, card)
+        EuchreDatabase.record_trick(card, current_player, self.game_state.trick_num)
 
     def bid_step(self):
         """
@@ -270,7 +274,8 @@ class Table(object):
             self.game_state.bidding_team = current_player.team_id
             self.game_state.defending_team = (current_player.team_id + 1) % 2
             self.game_state.set_state(GameState.TRICK_START)
-
+            EuchreDatabase.record_trump(self.game_state, self.game_state.top_card.get_suit(), 1, current_player,
+                                        self.game_state.top_card)
         elif bid == Player.PASS:
             logging.info("Player {}: Passed.".format(current_player.name))
             if current_player == dealer:
@@ -289,14 +294,13 @@ class Table(object):
         """
 
         dealer.discard(self.game_state)
-        top_card = self.game_state.give_top_card()
-        EuchreDatabase.record_trump(top_card.get_suit(), 1, current_player.name, top_card)
-        dealer.receive_card([top_card])
+        self.game_state.top_card = self.game_state.give_top_card()
+        dealer.receive_card([self.game_state.top_card])
 
         logging.info("Player {}: Ordered up the {}. Trumps is now {}".format(self.current_player_turn,
-                                                                             top_card, top_card.get_suit_str()))
-
-        self.game_state.set_trumps(top_card.get_suit())
+                                                                             self.game_state.top_card,
+                                                                             self.game_state.top_card.get_suit_str()))
+        self.game_state.set_trumps(self.game_state.top_card.get_suit())
 
         is_loaner = self.handle_loaner(current_player)
         if is_loaner:
@@ -308,6 +312,7 @@ class Table(object):
         In this bidding round each player has the option to announce trumps as long
         as it's not the card that was already optioned to be trumps. If all players decline to call
         trumps, then this round is dead, and we start again from a new deal with the same dealer.
+
         :return:
         """
         current_player = self.get_current_player()
@@ -315,15 +320,19 @@ class Table(object):
 
         bid = current_player.make_bid_rnd_2(self.game_state)
         if bid != Card.SUIT_NOSUIT:
-            EuchreDatabase.record_trump(bid, 2, current_player.name, None)
             self.handle_make(current_player, bid)
             self.game_state.set_trumps(bid)
             self.game_state.set_state(GameState.TRICK_START)
             self.game_state.bidding_team = current_player.team_id
             self.game_state.defending_team = (current_player.team_id + 1) % 2
+
+            is_loaner = self.handle_loaner(current_player)
+            if is_loaner:
+                self.loaner_team = current_player.team_id
+                self.loaner_player = current_player
+
+            EuchreDatabase.record_trump(self.game_state, bid, 2, current_player, None)
             self.reset_current_player()
-
-
 
         if bid == Card.SUIT_NOSUIT:
             logging.info("{} has decided not to announce a Trumps".format(current_player.name))
@@ -386,7 +395,6 @@ class Table(object):
         self.deck.shuffle_deck()
         self.game_state.set_state(GameState.GAME_START)
 
-
     def dead_deal(self):
         """
         In this case, all players passed on the face up card, and no one
@@ -399,7 +407,6 @@ class Table(object):
         self.game_state.set_state(GameState.DEAL)
         self.current_player_turn = (self.game_state.current_dealer + 1) % len(self.players)
         EuchreDatabase.record_redeal(True)
-
 
     def reset_current_player(self):
         """
@@ -416,14 +423,12 @@ class Table(object):
         """
         return self.players[self.game_state.current_dealer]
 
-
     def get_current_player(self) -> Player:
         """
         Get the player who's turn it is.
         :return: The current player Player object.
         """
         return self.players[self.current_player_turn]
-
 
     def get_player_teammate(self, current_player: Player) -> Player:
         """
@@ -440,7 +445,6 @@ class Table(object):
         raise Exception("Cannot find second player with the Team ID {} and without the player number of {}".format(
             current_player.team_id, current_player.player_num
         ))
-
 
     def move_dealer(self):
         """

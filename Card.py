@@ -126,7 +126,6 @@ class Card(object):
         else:
             return self.suit_str_long(self.suit)
 
-
     @staticmethod
     def suit_str(suit: int) -> str:
         if suit == Card.SUIT_SPADES:
@@ -150,7 +149,6 @@ class Card(object):
             return "CLUBS"
         elif suit == Card.SUIT_HEARTS:
             return "HEARTS"
-
 
     def __repr__(self):
         return "{}{}".format(self.get_value_str(), self.get_suit_str(short=True))

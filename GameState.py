@@ -34,7 +34,7 @@ class GameState(object):
         self.trick_num = 0
         self.game_id = game_id
         self.num_hands = 0
-
+        self.top_card = None
         self.current_dealer = randbelow(4)
 
     def calc_winner(self):

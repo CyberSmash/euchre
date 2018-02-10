@@ -11,7 +11,7 @@ FORMAT = "[%(levelname)s] %(message)s"
 
 def main():
 
-    logging.basicConfig(format=FORMAT, level=logging.WARN, filename="gamelog.txt")
+    logging.basicConfig(format=FORMAT, level=logging.INFO, filename="gamelog.txt")
     # @todo: this may not be necessary in the future.
     dbase = db.quick_setup()
     dbase.choices.delete_many({})
@@ -19,7 +19,7 @@ def main():
     dbase.tricks.delete_many({})
 
     print("Deleted old data. Continuing....")
-    sim = Simulator(GameType.PROGRESSIVE, 10, RandomPlayer)
+    sim = Simulator(GameType.PROGRESSIVE, 1, RandomPlayer)
     sim.run()
 
 
