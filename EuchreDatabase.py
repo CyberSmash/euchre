@@ -47,20 +47,48 @@ def record_deal(game_state, players):
     game['hands'][-1]['dealer'] = game_state.current_dealer
 
 
+def record_trick_end(winning_team, trick_num):
+    """
+    Record the results of the trick as if it were a 6th trick
+
+    This is admittedly a little strange, but I can't come up with a more straight forward
+    way of being able to access this data.
+
+    :param winning_team: The team who won the trick
+    """
+    global game
+    game['hands'][-1]['tricks'][trick_num].append(
+        {
+            'winning_team': winning_team,
+        }
+    )
+
+
+def record_hand_score(winning_team, points_scored, team_a_tricks, team_b_tricks):
+    global game
+    game['hands'][-1]['winner'] = {
+        'winning_team': winning_team,
+        'points_scored': points_scored,
+        'tricks': [
+            team_a_tricks,
+            team_b_tricks
+        ]
+
+    }
+
+
 def record_trick(card, player, trick_num):
 
     global game
     if 'tricks' not in game['hands'][-1]:
-        game['hands'][-1]['tricks'] = [list(), list(), list(), list(), list()]
+        game['hands'][-1]['tricks'] = [[] for _ in range(5)]  # Honestly, I need to make these magic numbers constants
 
-    pp = pprint.PrettyPrinter(indent=4)
-    print("Adding: card {} to trick_num {}".format(card, trick_num))
+
     game['hands'][-1]['tricks'][trick_num].append({
         'card': str(card),
-        'player_id': player.player_num
+        'player_id': player.player_num,
+        'team_id': player.team_id
     })
-    pp.pprint(game['hands'][-1]['tricks'][trick_num])
-
 
 
 def record_redeal(is_redeal):

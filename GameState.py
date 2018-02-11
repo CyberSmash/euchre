@@ -199,3 +199,6 @@ class GameState(object):
                 valid_plays.append(card)
 
         return valid_plays
+
+    def get_current_dealer_team_id(self):
+        return self.current_dealer % 2

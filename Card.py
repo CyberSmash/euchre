@@ -6,8 +6,8 @@ class Card(object):
     SUIT_CLUBS = 2
     SUIT_DIAMONDS = 3
 
-    COLOR_BLACK = 0 # Detrmined as SUIT_SPADES % 2 == 0 and SUIT_CLUBS % 2 == 0
-    COLOR_RED = 1 # Determined as SUIT_SPADES % 2 == 1 and SUIT_CLUBS % 2 == 1
+    COLOR_BLACK = 0  # Detrmined as SUIT_SPADES % 2 == 0 and SUIT_CLUBS % 2 == 0
+    COLOR_RED = 1  # Determined as SUIT_SPADES % 2 == 1 and SUIT_CLUBS % 2 == 1
 
     ACE = 14
     KING = 13

@@ -168,6 +168,7 @@ class Table(object):
                 self.current_player_turn = num
                 player.hand_score += 1
                 self.tricks_won[player.team_id] += 1
+                EuchreDatabase.record_trick_end(player.team_id, self.game_state.trick_num)
                 break
 
         self.game_state.reset_trick()
@@ -187,14 +188,23 @@ class Table(object):
         if self.tricks_won[bidding_team] == 3 or self.tricks_won[bidding_team] == 4:
             # Whether the bidding team goes alone or not, if they get 3 or 4 tricks they only get a point.
             self.scores[bidding_team] += 1
-        elif self.tricks_won[bidding_team] == 5:
-            if self.loaner_team is not None and bidding_team == self.loaner_team:
-                self.scores[bidding_team] += 4
-            else:
-                self.scores[bidding_team] += 2
+            EuchreDatabase.record_hand_score(bidding_team, 1, self.tricks_won[Teams.TEAM_A],
+                                             self.tricks_won[Teams.TEAM_B])
 
-        elif self.tricks_won[defending_team] == 3 or self.tricks_won[bidding_team] == 4:
+        elif self.tricks_won[bidding_team] == 5: # bidding team gets 5 points
+            if self.loaner_team is not None and bidding_team == self.loaner_team: # 5 points, plus loaner
+                self.scores[bidding_team] += 4
+                EuchreDatabase.record_hand_score(bidding_team, 4, self.tricks_won[Teams.TEAM_A],
+                                                 self.tricks_won[Teams.TEAM_B])
+            else:  # 5 points, no loaner
+                self.scores[bidding_team] += 2
+                EuchreDatabase.record_hand_score(bidding_team, 2, self.tricks_won[Teams.TEAM_A],
+                                                 self.tricks_won[Teams.TEAM_B])
+
+        elif self.tricks_won[defending_team] >= 3:
             self.scores[defending_team] += 2
+            EuchreDatabase.record_hand_score(defending_team, 2, self.tricks_won[Teams.TEAM_A],
+                                             self.tricks_won[Teams.TEAM_B])
 
         logging.info("The defending(team {}) team won {} tricks.".format(defending_team, self.tricks_won[defending_team]))
         logging.info("The bidding team(team {}) won {} tricks.".format(bidding_team, self.tricks_won[bidding_team]))
