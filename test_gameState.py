@@ -4,7 +4,7 @@ from GameState import GameState
 class TestGameState(TestCase):
 
     def setUp(self):
-        self.game_state = GameState()
+        self.game_state = GameState(0)
         self.game_state.state = GameState.TRICK_END
         self.game_state.trumps = Card.SUIT_DIAMONDS
 

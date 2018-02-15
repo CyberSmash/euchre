@@ -4,7 +4,8 @@ from Card import Card
 from secrets import randbelow, choice
 import copy
 import logging
-from typing import List
+from typing import List, Optional
+import operator
 
 
 class BasicPlayer(Player):
@@ -194,19 +195,19 @@ class BasicPlayer(Player):
 
         return voidable_suits
 
-    def find_lowest_card(self, avoid_suit):
+    def find_lowest_card(self, avoid_suit) -> Optional[Card]:
+        """
+        Get the lowest card possible.
 
-        lowest_card = None
+        :param avoid_suit: The suit to not pick from (usually because it's trump).
+        :return: A card that is the lowest in my hand. None if a non-avoid suit card can be found.
+        """
+        try:
+            card = min(filter(lambda a: a.suit != avoid_suit, self.hand), key=operator.attrgetter("value"))
+        except ValueError as ex:
+            return None
 
-        for card in self.hand:
-            if lowest_card is None and card.suit != avoid_suit:
-                lowest_card = card
-                continue
-
-            if card.value < lowest_card.value and card.suit != avoid_suit:
-                lowest_card = card
-
-        return lowest_card
+        return card
 
     def get_biggest_trump(self, trump_suit):
         trump_cards = self.get_trump_cards(trump_suit)
@@ -228,7 +229,7 @@ class BasicPlayer(Player):
 
         return biggest_card
 
-    def get_trump_cards(self, trump_suit) -> List(Card):
+    def get_trump_cards(self, trump_suit):
         """
         Return all of the card sin my hand that are trumps.
 
@@ -238,36 +239,19 @@ class BasicPlayer(Player):
         cards = [card for card in self.hand if card.get_suit(trump_suit) == trump_suit]
         return cards
 
-    def get_biggest_non_trump(self, trump_suit):
-        card = max(card.value for card in self.hand if card.get_suit(trump_suit) != trump_suit)
+    def get_biggest_non_trump(self, trump_suit) -> Optional[Card]:
+        """
+        Get the biggest non-trump card.
+
+        :param trump_suit: The suit to be avoided as trump.
+        :return: The biggest non-trump suit. In case of a tie, the first one encountered is returned.
+        """
+        try:
+            card = max(filter(lambda a: a.suit != trump_suit, self.hand), key=operator.attrgetter('value'))
+        except ValueError as ex:
+            return None
+
         return card
-
-    def find_lowest_card(self, trump_suit) -> Card:
-        """
-        Get the worst possible card in my hand and get rid of it.
-        :param trump_suit: The suit of trump, don't pick this card.
-
-        :return: A card that is the lowest card in my hand
-        """
-        lowest_card = None
-
-        for card in self.hand:
-            if lowest_card is None and card.get_suit(trump_suit) != trump_suit:
-                lowest_card = card
-                continue
-            if lowest_card > card.value and card.get_suit(trump_suit) != trump_suit:
-                lowest_card = card
-
-        # We found no non-trump cards.
-        if lowest_card is None:
-            for card in self.hand:
-                if lowest_card is None:
-                    lowest_card = card
-                    continue
-                if lowest_card.value > card.value:
-                    lowest_card = card
-
-        return lowest_card
 
     def winning_card(self, trump_suit, tricks_played):
         """
@@ -276,3 +260,4 @@ class BasicPlayer(Player):
         :param tricks_played:
         :return:
         """
+        pass
