@@ -4,6 +4,8 @@ from Card import Card
 from secrets import randbelow, choice
 import copy
 import logging
+from typing import List
+
 
 class BasicPlayer(Player):
 
@@ -17,9 +19,31 @@ class BasicPlayer(Player):
 
         if len(game_state.trick_cards) == 0:
             # It's my lead
-            pass
+            card = self.get_biggest_trump(game_state.trumps)
+            if card is None:
+                # lead biggest off suit
+                card = self.get_biggest_non_trump(game_state.trumps)
 
-        logging.info("{} plays {}".format(self.name, card))
+        elif len(game_state.trick_cards) < 4:
+            # I'm not at the end
+            pass
+        else:
+            # I'm the last person. Determine if my partner is already winning
+            current_winner = game_state.calc_winner()
+            # @ todo, this should be fixed, its not always going to be that player id and team id are connected.
+            current_winner_team_id = current_winner % 2
+
+            # My partner has already won the trick, toss something stupid
+            if current_winner_team_id == self.team_id:
+
+                card = self.find_lowest_card(game_state.trumps)
+
+            # The other team is winning the trick. Determine if I can win
+            card = self.winning_card(game_state.trumps, game_state.trick_cards)
+            if card is None:
+                # No way to win, toss something stupid
+                card = self.find_lowest_card(game_state.trumps)
+
         self.hand.remove(card)
         return card
 
@@ -173,6 +197,7 @@ class BasicPlayer(Player):
     def find_lowest_card(self, avoid_suit):
 
         lowest_card = None
+
         for card in self.hand:
             if lowest_card is None and card.suit != avoid_suit:
                 lowest_card = card
@@ -181,4 +206,73 @@ class BasicPlayer(Player):
             if card.value < lowest_card.value and card.suit != avoid_suit:
                 lowest_card = card
 
+        return lowest_card
+
+    def get_biggest_trump(self, trump_suit):
+        trump_cards = self.get_trump_cards(trump_suit)
+        if len(trump_cards) == 0:
+            # I have no trumps
+            return None
+
+        if len(trump_cards) == 1:
+            return trump_cards[0]
+
+        biggest_card = None
+        for card in self.hand:
+            if biggest_card is None and card.suit == trump_suit:
+                biggest_card = card
+                continue
+
+            if biggest_card.value < card.value and card.suit == trump_suit:
+                biggest_card = card
+
+        return biggest_card
+
+    def get_trump_cards(self, trump_suit) -> List(Card):
+        """
+        Return all of the card sin my hand that are trumps.
+
+        :param trump_suit: The suit of trump.
+        :return: A list of cards.
+        """
+        cards = [card for card in self.hand if card.get_suit(trump_suit) == trump_suit]
+        return cards
+
+    def get_biggest_non_trump(self, trump_suit):
+        card = max(card.value for card in self.hand if card.get_suit(trump_suit) != trump_suit)
         return card
+
+    def find_lowest_card(self, trump_suit) -> Card:
+        """
+        Get the worst possible card in my hand and get rid of it.
+        :param trump_suit: The suit of trump, don't pick this card.
+
+        :return: A card that is the lowest card in my hand
+        """
+        lowest_card = None
+
+        for card in self.hand:
+            if lowest_card is None and card.get_suit(trump_suit) != trump_suit:
+                lowest_card = card
+                continue
+            if lowest_card > card.value and card.get_suit(trump_suit) != trump_suit:
+                lowest_card = card
+
+        # We found no non-trump cards.
+        if lowest_card is None:
+            for card in self.hand:
+                if lowest_card is None:
+                    lowest_card = card
+                    continue
+                if lowest_card.value > card.value:
+                    lowest_card = card
+
+        return lowest_card
+
+    def winning_card(self, trump_suit, tricks_played):
+        """
+
+        :param trump_suit:
+        :param tricks_played:
+        :return:
+        """

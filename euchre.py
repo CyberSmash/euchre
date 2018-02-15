@@ -20,7 +20,7 @@ def main():
     dbase.tricks.delete_many({})
 
     print("Deleted old data. Continuing....")
-    sim = Simulator(GameType.PROGRESSIVE, 1, BasicPlayer)
+    sim = Simulator(GameType.PROGRESSIVE, 100000, BasicPlayer)
     sim.run()
 
 
