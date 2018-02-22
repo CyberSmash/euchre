@@ -1,6 +1,7 @@
 from Card import Card
 import logging
 from secrets import randbelow
+from typing import Optional
 
 class GameState(object):
 
@@ -37,24 +38,18 @@ class GameState(object):
         self.top_card = None
         self.current_dealer = randbelow(4)
 
-    def calc_winner(self):
+    def calc_winner(self) -> Optional[Card]:
         """
         Determine the winner at the end of a trick.
 
         :return: The player number of the winner.
         """
         # This isn't an efficient way to do this, but it works.
-        best_card = self.lead_card.get_total_value(self.trumps, self.lead_card.suit)
-        best_player = self.lead_player.player_num
+        best_card_player = max(self.trick_cards,
+                        key=lambda c: self.trick_cards[c].get_total_value(self.trumps, self.lead_card.get_suit()))
 
-        for player_num, card in self.trick_cards.items():
-            current_card_val = card.get_total_value(self.trumps, self.lead_card.suit)
 
-            if best_card < current_card_val:
-                best_card = current_card_val
-                best_player = player_num
-
-        return best_player
+        return best_card_player
 
     def reset_trick(self):
         self.lead_card = None

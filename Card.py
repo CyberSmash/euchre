@@ -1,5 +1,11 @@
 class Card(object):
 
+    LEAD_BONUS = 100
+    TRUMP_BONUS = 500
+    LEFT_BOWER_BONUS = 1000
+    RIGHT_BOWER_BONUS = 2000
+
+
     SUIT_NOSUIT = -1
     SUIT_SPADES = 0
     SUIT_HEARTS = 1
@@ -37,19 +43,19 @@ class Card(object):
 
         # Player followed suit, but it is not a trump suit.
         if self.suit == lead_suit and trump_suit != lead_suit:
-            ret_val += 100
+            ret_val += Card.LEAD_BONUS
 
         # Player does not have a bauer but does have a trump suit card.
         if self.value != Card.JACK and self.suit == trump_suit:
-            ret_val += 500
+            ret_val += Card.TRUMP_BONUS
 
         # Player has a bauer
         if self.value == Card.JACK and color == trump_color:
             # we have a jack and a bauer.
             if self.suit == trump_suit:
-                ret_val += 2000
+                ret_val += Card.RIGHT_BOWER_BONUS
             if self.suit != trump_suit:
-                ret_val += 1000
+                ret_val += Card.LEFT_BOWER_BONUS
 
         return ret_val
 

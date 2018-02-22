@@ -142,11 +142,14 @@ class BasicPlayer(Player):
                 return True
         return False
 
-    def num_offsuit_aces(self, avoid_suit):
-        count = 0
-        for card in self.hand:
-            if card.value == Card.ACE and card.get_raw_suit() != avoid_suit:
-                count += 1
+    def num_offsuit_aces(self, avoid_suit: int) -> int:
+        """
+        Calculate the number of offsuit aces that exist in our hand.
+
+        :param avoid_suit: The suit we wish to not count. Typically trump or something.
+        :return: The number of offsuit aces in our hand.
+        """
+        count = sum(1 for c in filter(lambda c: c.get_raw_suit() != avoid_suit and c.value == Card.ACE, self.hand))
 
         return count
 
@@ -183,55 +186,66 @@ class BasicPlayer(Player):
         hand_strength += (offsuit_aces)
         return hand_strength
 
-    def find_voidable_suits(self, avoid_suit: int):
+    def find_voidable_suits(self, trump_suit: int) -> List[int]:
+        """
+        Find any suits which could be voided (only one card remains)
+
+        @attention tests written
+
+        :param trump_suit: The current trump suit, this suit will not be reported.
+        :return: A list of integers containing the suits which can be voided
+        """
         suit_count = [0 for _ in range(4)]
         for card in self.hand:
-            suit_count[card.get_suit()] += 1
+            suit_count[card.get_suit(trump_suit)] += 1
 
         voidable_suits = list()
         for num, count in enumerate(suit_count):
-            if count == 1 and num != avoid_suit:
+            if count == 1 and num != trump_suit:
                 voidable_suits.append(num)
 
         return voidable_suits
 
-    def find_lowest_card(self, avoid_suit) -> Optional[Card]:
+    def find_lowest_card(self, avoid_suit: int, lead_suit: int=Card.SUIT_NOSUIT) -> Optional[Card]:
         """
         Get the lowest card possible.
 
+        @attention tests written
+
         :param avoid_suit: The suit to not pick from (usually because it's trump).
+        :param lead_suit: The suit that was lead. Card.SUIT_NOSUIT if it hasn't been set.
         :return: A card that is the lowest in my hand. None if a non-avoid suit card can be found.
         """
         try:
-            card = min(filter(lambda a: a.suit != avoid_suit, self.hand), key=operator.attrgetter("value"))
+            card = min(filter(lambda a: a.suit != avoid_suit, self.hand), key=lambda c: c.get_total_value(avoid_suit, lead_suit))
         except ValueError as ex:
             return None
 
         return card
 
-    def get_biggest_trump(self, trump_suit):
-        trump_cards = self.get_trump_cards(trump_suit)
-        if len(trump_cards) == 0:
-            # I have no trumps
+    def get_biggest_trump(self, trump_suit: int, lead_card_suit: int=Card.SUIT_NOSUIT) -> Optional[Card]:
+        """
+        Get the biggest trump-suited card in my hand.
+
+        @attention tests written
+
+        :param trump_suit: The trumpian suit.
+        :param lead_card_suit: The lead card's suit.
+        :return: None if there are no trump cards. The biggest trump card if one exists.
+        """
+        try:
+            card = max(filter(lambda a: a.get_suit(trump_suit) == trump_suit, self.hand),
+                       key=lambda c: c.get_total_value(trump_suit, lead_card_suit))
+        except ValueError as ex:
             return None
 
-        if len(trump_cards) == 1:
-            return trump_cards[0]
-
-        biggest_card = None
-        for card in self.hand:
-            if biggest_card is None and card.suit == trump_suit:
-                biggest_card = card
-                continue
-
-            if biggest_card.value < card.value and card.suit == trump_suit:
-                biggest_card = card
-
-        return biggest_card
+        return card
 
     def get_trump_cards(self, trump_suit):
         """
         Return all of the card sin my hand that are trumps.
+
+        @attention tests written
 
         :param trump_suit: The suit of trump.
         :return: A list of cards.
@@ -239,15 +253,18 @@ class BasicPlayer(Player):
         cards = [card for card in self.hand if card.get_suit(trump_suit) == trump_suit]
         return cards
 
-    def get_biggest_non_trump(self, trump_suit) -> Optional[Card]:
+    def get_biggest_non_trump(self, trump_suit, lead_card_suit=Card.SUIT_NOSUIT) -> Optional[Card]:
         """
         Get the biggest non-trump card.
+
+        @attention tests written
 
         :param trump_suit: The suit to be avoided as trump.
         :return: The biggest non-trump suit. In case of a tie, the first one encountered is returned.
         """
         try:
-            card = max(filter(lambda a: a.suit != trump_suit, self.hand), key=operator.attrgetter('value'))
+            card = max(filter(lambda a: a.get_suit(trump_suit) != trump_suit, self.hand),
+                       key=lambda c: c.get_total_value(trump_suit, lead_card_suit))
         except ValueError as ex:
             return None
 

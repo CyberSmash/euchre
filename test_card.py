@@ -63,6 +63,8 @@ class TestCard(TestCase):
         self.assertEqual(newCard.get_suit(Card.SUIT_DIAMONDS), Card.SUIT_CLUBS)
         self.assertEqual(newCard.get_suit(Card.SUIT_HEARTS), Card.SUIT_CLUBS)
 
+        self.assertEqual(newCard.get_suit(Card.SUIT_SPADES), Card.SUIT_SPADES)
+
         newCard = Card(Card.SUIT_CLUBS, Card.KING)
         self.assertEqual(newCard.get_suit(Card.SUIT_CLUBS), Card.SUIT_CLUBS)
         self.assertEqual(newCard.get_suit(Card.SUIT_SPADES), Card.SUIT_CLUBS)
@@ -70,3 +72,6 @@ class TestCard(TestCase):
 
         self.assertEqual(newCard.get_suit(Card.SUIT_DIAMONDS), Card.SUIT_CLUBS)
         self.assertEqual(newCard.get_suit(Card.SUIT_HEARTS), Card.SUIT_CLUBS)
+
+        newCard = Card(Card.SUIT_DIAMONDS, Card.JACK)
+        self.assertEqual(newCard.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)

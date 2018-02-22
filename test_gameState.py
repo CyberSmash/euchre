@@ -8,9 +8,7 @@ class TestGameState(TestCase):
         self.game_state.state = GameState.TRICK_END
         self.game_state.trumps = Card.SUIT_DIAMONDS
 
-
     def test_calc_winnner(self):
-
         # No trumps
         self.game_state.lead_card = Card(Card.SUIT_HEARTS, Card.ACE)
         self.game_state.trick_cards = {
@@ -111,7 +109,7 @@ class TestGameState(TestCase):
         }
 
         res = self.game_state.trick_cards[0].get_total_value(self.game_state.trumps, Card.SUIT_CLUBS)
-        self.assertEqual(res, 11)
+        self.assertEqual(res, 11 + Card.LEAD_BONUS)
         winner = self.game_state.calc_winner()
         self.assertEqual(winner, 3)
 
