@@ -2,16 +2,13 @@ from unittest import TestCase
 from BasicPlayer import BasicPlayer
 from enums import Teams
 from Card import Card
+from Player import Player
+
 
 class TestBasicPlayer(TestCase):
 
     def setUp(self):
         self.player = BasicPlayer(0, 0, "player-0")
-
-    def tearDown(self):
-        pass
-
-    def test_get_biggest_non_trump(self):
         self.player.hand = [
             Card(Card.SUIT_CLUBS, 10),
             Card(Card.SUIT_SPADES, Card.KING),
@@ -19,6 +16,11 @@ class TestBasicPlayer(TestCase):
             Card(Card.SUIT_DIAMONDS, Card.JACK),
             Card(Card.SUIT_HEARTS, 9)
         ]
+
+    def tearDown(self):
+        pass
+
+    def test_get_biggest_non_trump(self):
 
         card = self.player.get_biggest_non_trump(Card.SUIT_HEARTS)
         self.assertEqual(card.value, self.player.hand[1].value)
@@ -29,13 +31,6 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(card.suit, Card.SUIT_HEARTS)
 
     def test_get_trump_cards(self):
-        self.player.hand = [
-            Card(Card.SUIT_CLUBS, 10),
-            Card(Card.SUIT_SPADES, Card.KING),
-            Card(Card.SUIT_HEARTS, Card.ACE),
-            Card(Card.SUIT_DIAMONDS, Card.JACK),
-            Card(Card.SUIT_HEARTS, 9)
-        ]
 
         cards = self.player.get_trump_cards(Card.SUIT_HEARTS)
         self.assertEqual(len(cards), 3)
@@ -52,39 +47,18 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(len(cards), 1)
 
     def test_find_lowest_card(self):
-        self.player.hand = [
-            Card(Card.SUIT_CLUBS, 10),
-            Card(Card.SUIT_SPADES, Card.KING),
-            Card(Card.SUIT_HEARTS, Card.ACE),
-            Card(Card.SUIT_DIAMONDS, Card.JACK),
-            Card(Card.SUIT_HEARTS, 9)
-        ]
 
         lowest_card = self.player.find_lowest_card(Card.SUIT_CLUBS)
         self.assertEqual(lowest_card.value, 9)
         self.assertEqual(lowest_card.suit, Card.SUIT_HEARTS)
 
     def test_get_biggest_trump(self):
-        self.player.hand = [
-            Card(Card.SUIT_CLUBS, 10),
-            Card(Card.SUIT_SPADES, Card.KING),
-            Card(Card.SUIT_HEARTS, Card.ACE),
-            Card(Card.SUIT_DIAMONDS, Card.JACK),
-            Card(Card.SUIT_HEARTS, 9)
-        ]
 
         biggest_trump = self.player.get_biggest_trump(Card.SUIT_HEARTS, Card.SUIT_NOSUIT)
         self.assertEqual(biggest_trump.get_total_value(Card.SUIT_HEARTS, Card.SUIT_NOSUIT), Card.JACK + Card.LEFT_BOWER_BONUS)
         self.assertEqual(biggest_trump.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)
 
     def test_find_voidable_suits(self):
-        self.player.hand = [
-            Card(Card.SUIT_CLUBS, 10),
-            Card(Card.SUIT_SPADES, Card.KING),
-            Card(Card.SUIT_HEARTS, Card.ACE),
-            Card(Card.SUIT_DIAMONDS, Card.JACK),
-            Card(Card.SUIT_HEARTS, 9)
-        ]
 
         voidable_suits = self.player.find_voidable_suits(Card.SUIT_DIAMONDS)
         self.assertEqual(2, len(voidable_suits))
@@ -103,13 +77,74 @@ class TestBasicPlayer(TestCase):
         self.assertTrue(Card.SUIT_DIAMONDS in voidable_suits)
 
     def test_num_offsuit_aces(self):
-        self.player.hand = [
-            Card(Card.SUIT_CLUBS, 10),
-            Card(Card.SUIT_SPADES, Card.KING),
-            Card(Card.SUIT_HEARTS, Card.ACE),
-            Card(Card.SUIT_DIAMONDS, Card.JACK),
-            Card(Card.SUIT_HEARTS, 9)
-        ]
 
         num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_DIAMONDS)
         self.assertEqual(1, num_offsuit_aces)
+
+        num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_HEARTS)
+        self.assertEqual(0, num_offsuit_aces)
+
+        num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_NOSUIT)
+        self.assertEqual(1, num_offsuit_aces)
+
+    def test_has_card(self):
+
+        self.assertEqual(True, self.player.has_card(10, Card.SUIT_CLUBS))
+        self.assertEqual(True, self.player.has_card(Card.ACE, Card.SUIT_HEARTS))
+        self.assertEqual(False, self.player.has_card(Card.ACE, Card.SUIT_CLUBS))
+        self.assertEqual(True, self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS))
+        self.assertEqual(True, self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS, Card.SUIT_DIAMONDS))
+
+    def test_would_have_left_bower(self):
+
+        top_card = Card(Card.SUIT_CLUBS, Card.ACE)
+        self.assertEqual(False, self.player.would_have_left_bower(top_card))
+
+        top_card = Card(Card.SUIT_HEARTS, Card.ACE)
+        self.assertEqual(True, self.player.would_have_left_bower(top_card))
+
+        top_card = Card(Card.SUIT_DIAMONDS, Card.ACE)
+        self.assertEqual(False, self.player.would_have_left_bower(top_card))
+
+    def test_would_have_right_bower(self):
+
+        top_card = Card(Card.SUIT_CLUBS, Card.ACE)
+        self.assertEqual(False, self.player.would_have_right_bower(top_card))
+
+        top_card = Card(Card.SUIT_DIAMONDS, 10)
+        self.assertEqual(True, self.player.would_have_right_bower(top_card))
+
+        top_card = Card(Card.SUIT_HEARTS, 10)
+        self.assertEqual(False, self.player.would_have_right_bower(top_card))
+
+    def test_count_suit(self):
+        num = self.player.count_suit(Card.SUIT_HEARTS)
+        self.assertEqual(2, num)
+
+        num = self.player.count_suit(Card.SUIT_SPADES)
+        self.assertEqual(1, num)
+
+    def test_calc_hand_strength(self):
+        top_card = Card(Card.SUIT_SPADES, 10)
+        strength = self.player.calc_hand_strength(top_card)
+        self.assertEqual(3, strength)
+
+        top_card = Card(Card.SUIT_HEARTS, 10)
+        strength = self.player.calc_hand_strength(top_card)
+        self.assertEqual(6, strength)
+
+    def test_make_bid_rnd_1(self):
+        top_card = Card(Card.SUIT_SPADES, 10)
+        result = self.player.make_bid_rnd_1(top_card)
+        self.assertEqual(Player.PASS, result)
+
+        top_card = Card(Card.SUIT_HEARTS, 10)
+        result = self.player.make_bid_rnd_1(top_card)
+        self.assertEqual(Player.PASS, result)
+
+        self.player.hand[-1] = Card(Card.SUIT_HEARTS, Card.JACK)
+        result = self.player.make_bid_rnd_1(top_card)
+        self.assertEqual(Player.ORDER_UP, result)
+
+    def test_make_bid_rnd_2(self):
+        pass

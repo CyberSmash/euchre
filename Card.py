@@ -113,7 +113,18 @@ class Card(object):
 
         return "Unk"
 
-    def get_matching(self, suit):
+    @staticmethod
+    def get_matching(suit):
+        """
+        Get the matching suit of the card.
+
+        For example if the paramter suit is spades, this will return clubs, if clubs, it will return spades.
+        The matching suit is always the other suit of the same color.
+
+        :param suit: The suit you would like the matching suit of.
+
+        :return: The matching suit of the same color.
+        """
         if suit == Card.SUIT_CLUBS:
             return Card.SUIT_SPADES
 

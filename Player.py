@@ -31,10 +31,10 @@ class Player(object):
         """
         self.hand += card_list
 
-    def make_bid_rnd_1(self, game_state: GameState):
+    def make_bid_rnd_1(self, top_card: Card) -> int:
         raise Exception("Players without personalities cannot make bids")
 
-    def make_bid_rnd_2(self, game_state: GameState):
+    def make_bid_rnd_2(self, top_card: Card) -> int:
         raise Exception("Players without personalities cannot pick trumps.")
 
     def discard(self, game_state: GameState):

@@ -39,7 +39,7 @@ class RandomPlayer(Player):
         self.hand.remove(card)
         return card
 
-    def make_bid_rnd_1(self, game_state: GameState) -> int:
+    def make_bid_rnd_1(self, top_card: Card) -> int:
         """
         Determine at a 1/4 way if the player will order up / assist.
 
@@ -67,14 +67,14 @@ class RandomPlayer(Player):
             self.is_out = False
             return True
 
-    def make_bid_rnd_2(self, game_state: GameState) -> int:
+    def make_bid_rnd_2(self, top_card: Card) -> int:
 
         pick_suit = randbelow(RandomPlayer.CHANCE_OF_RND_2_BID)
         if pick_suit != 0:
             return Card.SUIT_NOSUIT
 
         suits = copy.copy(Card.SUITS) # a little slow, but readable. Necessary so we don't all modify the same list.
-        invalid_suit = game_state.top_card.get_suit()
+        invalid_suit = top_card.get_suit()
         logging.info("Removing Suit: {}".format(invalid_suit))
         logging.info("Suits: {}".format(suits))
         suits.remove(invalid_suit)

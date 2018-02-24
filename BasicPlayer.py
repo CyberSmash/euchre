@@ -48,14 +48,15 @@ class BasicPlayer(Player):
         self.hand.remove(card)
         return card
 
-    def make_bid_rnd_1(self, game_state: GameState) -> int:
+    def make_bid_rnd_1(self, top_card: Card) -> int:
         """
         Determine if we should order up.
 
+        :param top_card The top card on the deck during bidding.
         :return: True if the player orders it up / assists False if they pass
         """
 
-        hand_strength = self.calc_hand_strength(game_state.top_card)
+        hand_strength = self.calc_hand_strength(top_card)
         if hand_strength >= 7:
             return Player.ORDER_UP
 
@@ -72,9 +73,18 @@ class BasicPlayer(Player):
         """
         return False
 
-    def make_bid_rnd_2(self, game_state: GameState) -> int:
-        suits = copy.copy(Card.SUITS) # a little slow, but readable. Necessary so we don't all modify the same list.
-        invalid_suit = game_state.top_card.get_suit()
+    def make_bid_rnd_2(self, top_card: Card) -> int:
+        """
+        Determine if the  player should call trump or not.
+
+        If the player cannot make a hand tht is better than or equal to 7 points they will pass. Otherwise, they
+        will announce trump.
+
+        :param top_card:
+        :return:
+        """
+        suits = copy.copy(Card.SUITS)  # a little slow, but readable. Necessary so we don't all modify the same list.
+        invalid_suit = top_card.get_suit()
         suits.remove(invalid_suit)
 
         strongest_suit = 0
@@ -117,34 +127,88 @@ class BasicPlayer(Player):
         del self.hand[idx] # @TODO: I'm not iterating...does this have consequences?
         return discard
 
-    def count_suit(self, suit):
+    def count_suit(self, suit: int, trump_suit: int=Card.SUIT_NOSUIT) -> int:
+        """
+        Count the number of cards given a particular suit.
+
+        If the trump suit is set, then the left bower will be treated as a member of that suit. If set to
+        the default value of Card.SUIT_NOSUIT this function will usethe raw suit.
+
+        :attention unit tests written
+
+        :param suit: The card suit you want to count
+        :param trump_suit:  The current trump suit.
+        :return: The number of cards of the provided suit in the player's hand.
+        """
+
         count = 0
         for card in self.hand:
-            if card.suit == suit:
+            if card.get_suit(trump_suit) == suit:
                 count += 1
         return count
 
-    def would_have_right_bower(self, top_card: Card):
+    def would_have_right_bower(self, top_card: Card) -> bool:
+        """
+        Determine if the player would have the right bower, given that the top card would be picked up.
+
+        This function should only be used in bidding. It tries to determine that if the player ordered up the top card,
+        that they would now have a right bower in their hand.
+
+        :attention unit tests written
+
+        :param top_card: The top card during bidding.
+        :return: True if the player would have the right bower. False if the player would not have the right bower,
+        including the situation where the player would have the left bower. For that information call
+        would_have_left_bower()
+        """
         for card in self.hand:
             if card.value == Card.JACK and top_card.suit == card.suit:
                 return True
         return False
 
-    def would_have_left_bower(self, top_card: Card):
+    def would_have_left_bower(self, top_card: Card) -> bool:
+        """
+        Determine if the player would have the left bower, given that the top card is picked up.
+
+        This function should only be used in bidding. It tries to determine that if the player ordered up the top card,
+        that they would now have a left bower in their hand.
+
+        :attention unit tests written.
+
+        :param top_card: The top card on the deck, used in bidding.
+        :return: True if the player would have the left bower. False otherwise, including the situation where the player
+        would have the right bower. For that information call would_have_right_bower().
+        """
         for card in self.hand:
-            if card.value == Card.JACK and top_card.get_matching(card.suit) == card.suit:
+            # Note: card.suit is used here since this is only used in bidding, and therefore the trump card is not set.
+            if card.value == Card.JACK and Card.get_matching(top_card.suit) == card.suit:
                 return True
         return False
 
-    def has_card(self, value, suit):
+    def has_card(self, value, suit, trump_suit=Card.SUIT_NOSUIT) -> bool:
+        """
+        Determine if there is a particular card in the player's hand.
+
+        :attention unit tests written.
+
+        :param value: The value desired. This is the straight value, irrespective of the trump suit.
+        :param suit: This is the suit of the card. if trump_suit is provided, this is the effective suit of the card.
+        Otherwise, it's the raw suit of the card.
+        :param trump_suit: The current trump suit. Take care when using this parameter, the left and right bower will
+        look the same.
+
+        :return: True of the player has the card in his hand that matches. False otherwise.
+        """
         for card in self.hand:
-            if card.value == value and card.suit == suit:
+            if card.value == value and card.get_suit(trump_suit) == suit:
                 return True
         return False
 
     def num_offsuit_aces(self, avoid_suit: int) -> int:
         """
-        Calculate the number of offsuit aces that exist in our hand.
+        Calculate the number of off-suit aces that exist in our hand.
+
+        :attention - Unit tests written
 
         :param avoid_suit: The suit we wish to not count. Typically trump or something.
         :return: The number of offsuit aces in our hand.
@@ -153,13 +217,15 @@ class BasicPlayer(Player):
 
         return count
 
-    def calc_hand_strength(self, potential_trump: Card):
+    def calc_hand_strength(self, potential_trump: Card) -> int:
         """
         Hand strength system found at: https://www.thespruce.com/how-to-bid-in-euchre-411487
         Other systems exist that I may implement in the future.
 
+        :attention unit tests written
+
         :param potential_trump: The potential trump card.
-        :return:
+        :return: The value of the hand as an integer.
         """
         hand_strength = 0
 
@@ -183,14 +249,14 @@ class BasicPlayer(Player):
             hand_strength += 1
 
         offsuit_aces = self.num_offsuit_aces(top_card_suit)
-        hand_strength += (offsuit_aces)
+        hand_strength += offsuit_aces
         return hand_strength
 
     def find_voidable_suits(self, trump_suit: int) -> List[int]:
         """
         Find any suits which could be voided (only one card remains)
 
-        @attention tests written
+        :attention tests written
 
         :param trump_suit: The current trump suit, this suit will not be reported.
         :return: A list of integers containing the suits which can be voided
@@ -210,7 +276,7 @@ class BasicPlayer(Player):
         """
         Get the lowest card possible.
 
-        @attention tests written
+        :attention unit tests written
 
         :param avoid_suit: The suit to not pick from (usually because it's trump).
         :param lead_suit: The suit that was lead. Card.SUIT_NOSUIT if it hasn't been set.
@@ -227,7 +293,7 @@ class BasicPlayer(Player):
         """
         Get the biggest trump-suited card in my hand.
 
-        @attention tests written
+        :attention tests written
 
         :param trump_suit: The trumpian suit.
         :param lead_card_suit: The lead card's suit.
@@ -245,7 +311,7 @@ class BasicPlayer(Player):
         """
         Return all of the card sin my hand that are trumps.
 
-        @attention tests written
+        :attention tests written
 
         :param trump_suit: The suit of trump.
         :return: A list of cards.
@@ -257,7 +323,7 @@ class BasicPlayer(Player):
         """
         Get the biggest non-trump card.
 
-        @attention tests written
+        :attention tests written
 
         :param trump_suit: The suit to be avoided as trump.
         :return: The biggest non-trump suit. In case of a tie, the first one encountered is returned.

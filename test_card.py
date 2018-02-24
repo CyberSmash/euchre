@@ -75,3 +75,17 @@ class TestCard(TestCase):
 
         newCard = Card(Card.SUIT_DIAMONDS, Card.JACK)
         self.assertEqual(newCard.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)
+
+    def test_get_matching(self):
+        suit = Card.get_matching(Card.SUIT_SPADES)
+        self.assertEqual(Card.SUIT_CLUBS, suit)
+
+        suit = Card.get_matching(Card.SUIT_CLUBS)
+        self.assertEqual(Card.SUIT_SPADES, suit)
+
+        suit = Card.get_matching(Card.SUIT_DIAMONDS)
+        self.assertEqual(Card.SUIT_HEARTS, suit)
+
+        suit = Card.get_matching(Card.SUIT_HEARTS)
+        self.assertEqual(Card.SUIT_DIAMONDS, suit)
+
