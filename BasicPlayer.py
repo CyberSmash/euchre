@@ -111,19 +111,14 @@ class BasicPlayer(Player):
         idx = None
         voidable_suits = self.find_voidable_suits(trump_suit)
         if len(voidable_suits) > 0:
-            for index, card in enumerate(self.hand):
-                if card.get_suit() == voidable_suits[0]:
-                    idx = index
-                    break
+            lowest_card = min(filter(lambda a: a.get_suit(trump_suit) in voidable_suits, self.hand),
+                            key=lambda c: c.get_total_value(trump_suit, Card.SUIT_NOSUIT))
+
         else:
             lowest_card = self.find_lowest_card(trump_suit)
-            for index, card in self.hand:
-                if card == lowest_card:
-                    idx = index
 
-        discard = self.hand[idx]
-        del self.hand[idx]  # @TODO: I'm not iterating...does this have consequences?
-        return discard
+        self.hand.remove(lowest_card)
+        return lowest_card
 
     def count_suit(self, suit: int, trump_suit: int=Card.SUIT_NOSUIT) -> int:
         """

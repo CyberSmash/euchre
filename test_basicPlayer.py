@@ -156,10 +156,21 @@ class TestBasicPlayer(TestCase):
 
         discard = self.player.discard(Card.SUIT_CLUBS)
         self.assertEqual(Card.SUIT_DIAMONDS, discard.get_suit(Card.SUIT_CLUBS))
+        self.assertFalse(discard in self.player.hand)
+        self.assertEqual(4, len(self.player.hand))
 
+        # Test that the player cannot void a suit.
+        self.player.hand = [
+            Card(Card.SUIT_SPADES, 10),
+            Card(Card.SUIT_SPADES, Card.KING),
+            Card(Card.SUIT_HEARTS, Card.ACE),
+            Card(Card.SUIT_SPADES, Card.JACK),
+            Card(Card.SUIT_HEARTS, 9)
+        ]
 
-
-
+        discard = self.player.discard(Card.SUIT_DIAMONDS)
+        self.assertEqual(Card.SUIT_HEARTS, discard.get_suit(Card.SUIT_DIAMONDS))
+        self.assertEqual(9, discard.value)
 
     def test_make_bid_rnd_2(self):
         pass
