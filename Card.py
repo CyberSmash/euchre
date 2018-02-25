@@ -29,32 +29,32 @@ class Card(object):
         if suit < Card.SUIT_SPADES or suit > Card.SUIT_DIAMONDS:
             raise ValueError("Card Suit must be between 0 and 3 (inclusive)")
 
-        self.suit = suit
+        self._suit = suit
         self.value = value
 
     def get_value(self) -> int:
         return self.value
 
     def get_total_value(self, trump_suit: int, lead_suit: int):
-        color = self.get_color(self.suit)
+        color = self.get_color(self._suit)
         trump_color = self.get_color(trump_suit)
 
         ret_val = self.value
 
         # Player followed suit, but it is not a trump suit.
-        if self.suit == lead_suit and trump_suit != lead_suit:
+        if self._suit == lead_suit and trump_suit != lead_suit:
             ret_val += Card.LEAD_BONUS
 
         # Player does not have a bauer but does have a trump suit card.
-        if self.value != Card.JACK and self.suit == trump_suit:
+        if self.value != Card.JACK and self._suit == trump_suit:
             ret_val += Card.TRUMP_BONUS
 
         # Player has a bauer
         if self.value == Card.JACK and color == trump_color:
             # we have a jack and a bauer.
-            if self.suit == trump_suit:
+            if self._suit == trump_suit:
                 ret_val += Card.RIGHT_BOWER_BONUS
-            if self.suit != trump_suit:
+            if self._suit != trump_suit:
                 ret_val += Card.LEFT_BOWER_BONUS
 
         return ret_val
@@ -76,18 +76,18 @@ class Card(object):
     def get_suit(self, trump_suit=None) -> int:
         if trump_suit is not None and self.value == Card.JACK:
             matching_suit = self.get_matching(trump_suit)
-            if self.suit == matching_suit:
+            if self._suit == matching_suit:
                 return trump_suit
-        return self.suit
+        return self._suit
 
     def get_raw_suit(self):
-        return self.suit
+        return self._suit
 
     def set_value(self, new_val: int):
         self.value = new_val
 
     def set_suit(self, new_suit: int):
-        self.suit = new_suit
+        self._suit = new_suit
 
     def get_value_str(self) -> str:
         if self.value == None:
@@ -139,9 +139,9 @@ class Card(object):
 
     def get_suit_str(self, short: bool=False) -> str:
         if (short):
-            return self.suit_str(self.suit)
+            return self.suit_str(self._suit)
         else:
-            return self.suit_str_long(self.suit)
+            return self.suit_str_long(self._suit)
 
     @staticmethod
     def suit_str(suit: int) -> str:

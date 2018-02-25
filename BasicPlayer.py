@@ -100,31 +100,29 @@ class BasicPlayer(Player):
         else:
             return Card.SUIT_NOSUIT
 
-    def discard(self, game_state: GameState) -> Card:
+    def discard(self, trump_suit: int) -> Card:
         """
         The dealer will be required to discard if he has a card ordered up.
         This function decides what to discard.
 
-        :param game_state: The game state object
+        :param trump_suit: The suit of the card determined to be trump.
         :return: The discarded card.
         """
         idx = None
-        voidable_suits = self.find_voidable_suits(game_state.trumps)
+        voidable_suits = self.find_voidable_suits(trump_suit)
         if len(voidable_suits) > 0:
             for index, card in enumerate(self.hand):
                 if card.get_suit() == voidable_suits[0]:
                     idx = index
                     break
-
         else:
-
-            lowest_card = self.find_lowest_card(game_state.trumps)
+            lowest_card = self.find_lowest_card(trump_suit)
             for index, card in self.hand:
                 if card == lowest_card:
                     idx = index
 
         discard = self.hand[idx]
-        del self.hand[idx] # @TODO: I'm not iterating...does this have consequences?
+        del self.hand[idx]  # @TODO: I'm not iterating...does this have consequences?
         return discard
 
     def count_suit(self, suit: int, trump_suit: int=Card.SUIT_NOSUIT) -> int:
@@ -162,7 +160,7 @@ class BasicPlayer(Player):
         would_have_left_bower()
         """
         for card in self.hand:
-            if card.value == Card.JACK and top_card.suit == card.suit:
+            if card.value == Card.JACK and top_card._suit == card._suit:
                 return True
         return False
 
@@ -181,7 +179,7 @@ class BasicPlayer(Player):
         """
         for card in self.hand:
             # Note: card.suit is used here since this is only used in bidding, and therefore the trump card is not set.
-            if card.value == Card.JACK and Card.get_matching(top_card.suit) == card.suit:
+            if card.value == Card.JACK and Card.get_matching(top_card._suit) == card._suit:
                 return True
         return False
 
@@ -283,8 +281,9 @@ class BasicPlayer(Player):
         :return: A card that is the lowest in my hand. None if a non-avoid suit card can be found.
         """
         try:
-            card = min(filter(lambda a: a.suit != avoid_suit, self.hand), key=lambda c: c.get_total_value(avoid_suit, lead_suit))
-        except ValueError as ex:
+            card = min(filter(lambda a: a.get_suit(lead_suit) != avoid_suit, self.hand),
+                       key=lambda c: c.get_total_value(avoid_suit, lead_suit))
+        except ValueError:
             return None
 
         return card

@@ -38,19 +38,19 @@ class TestCard(TestCase):
 """
     def test_get_color(self):
         c = Card(Card.SUIT_CLUBS, Card.JACK)
-        color = c.get_color(c.suit)
+        color = c.get_color(c._suit)
         self.assertEqual(color, Card.COLOR_BLACK)
 
-        c.suit = Card.SUIT_SPADES
-        color = c.get_color(c.suit)
+        c._suit = Card.SUIT_SPADES
+        color = c.get_color(c._suit)
         self.assertEqual(color, Card.COLOR_BLACK)
 
-        c.suit = Card.SUIT_DIAMONDS
-        color = c.get_color(c.suit)
+        c._suit = Card.SUIT_DIAMONDS
+        color = c.get_color(c._suit)
         self.assertEqual(color, Card.COLOR_RED)
 
-        c.suit = Card.SUIT_HEARTS
-        color = c.get_color(c.suit)
+        c._suit = Card.SUIT_HEARTS
+        color = c.get_color(c._suit)
         self.assertEqual(color, Card.COLOR_RED)
 
     def test_get_suit(self):

@@ -24,11 +24,11 @@ class TestBasicPlayer(TestCase):
 
         card = self.player.get_biggest_non_trump(Card.SUIT_HEARTS)
         self.assertEqual(card.value, self.player.hand[1].value)
-        self.assertEqual(card.suit, self.player.hand[1].suit)
+        self.assertEqual(card._suit, self.player.hand[1]._suit)
 
         card = self.player.get_biggest_non_trump(Card.SUIT_SPADES)
         self.assertEqual(card.value, Card.ACE)
-        self.assertEqual(card.suit, Card.SUIT_HEARTS)
+        self.assertEqual(card._suit, Card.SUIT_HEARTS)
 
     def test_get_trump_cards(self):
 
@@ -50,7 +50,7 @@ class TestBasicPlayer(TestCase):
 
         lowest_card = self.player.find_lowest_card(Card.SUIT_CLUBS)
         self.assertEqual(lowest_card.value, 9)
-        self.assertEqual(lowest_card.suit, Card.SUIT_HEARTS)
+        self.assertEqual(lowest_card._suit, Card.SUIT_HEARTS)
 
     def test_get_biggest_trump(self):
 
@@ -145,6 +145,21 @@ class TestBasicPlayer(TestCase):
         self.player.hand[-1] = Card(Card.SUIT_HEARTS, Card.JACK)
         result = self.player.make_bid_rnd_1(top_card)
         self.assertEqual(Player.ORDER_UP, result)
+
+    def test_discard(self):
+        discard = self.player.discard(Card.SUIT_SPADES)
+        self.assertEqual(Card.SUIT_CLUBS, discard.get_suit(Card.SUIT_SPADES))
+        self.assertEqual(10, discard.get_value())
+
+        # put the discard card back into the players hand.
+        self.player.hand.append(discard)
+
+        discard = self.player.discard(Card.SUIT_CLUBS)
+        self.assertEqual(Card.SUIT_DIAMONDS, discard.get_suit(Card.SUIT_CLUBS))
+
+
+
+
 
     def test_make_bid_rnd_2(self):
         pass
