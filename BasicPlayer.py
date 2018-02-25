@@ -14,6 +14,8 @@ class BasicPlayer(Player):
     CHANCE_OF_RND_2_BID = 4
     CHANCE_OF_LOANER = 32
 
+    BID_THRESHOLD = 7
+
     def make_move(self, game_state: GameState):
 
         card = None
@@ -26,7 +28,7 @@ class BasicPlayer(Player):
                 card = self.get_biggest_non_trump(game_state.trumps)
 
         elif len(game_state.trick_cards) < 4:
-            # I'm not at the end
+            # @todo: This is not yet implemented.
             pass
         else:
             # I'm the last person. Determine if my partner is already winning
@@ -57,7 +59,7 @@ class BasicPlayer(Player):
         """
 
         hand_strength = self.calc_hand_strength(top_card)
-        if hand_strength >= 7:
+        if hand_strength >= BasicPlayer.BID_THRESHOLD:
             return Player.ORDER_UP
 
         return Player.PASS
@@ -80,8 +82,8 @@ class BasicPlayer(Player):
         If the player cannot make a hand tht is better than or equal to 7 points they will pass. Otherwise, they
         will announce trump.
 
-        :param top_card:
-        :return:
+        :param top_card: The top card of the deck during bidding.
+        :return: The suit that the player wants to bid on. Card.SUIT_NOSUIT if they wish to pass.
         """
         suits = copy.copy(Card.SUITS)  # a little slow, but readable. Necessary so we don't all modify the same list.
         invalid_suit = top_card.get_suit()
@@ -90,12 +92,12 @@ class BasicPlayer(Player):
         strongest_suit = 0
         best_suit = Card.SUIT_NOSUIT
         for suit in suits:
-            hand_strength = self.calc_hand_strength(Card(suit, 10)) # The value doesn't matter.
+            hand_strength = self.calc_hand_strength(Card(suit, 10))  # The value doesn't matter.
             if hand_strength > strongest_suit:
                 best_suit = suit
                 strongest_suit = hand_strength
 
-        if strongest_suit >= 7:
+        if strongest_suit >= BasicPlayer.BID_THRESHOLD:
             return best_suit
         else:
             return Card.SUIT_NOSUIT
@@ -104,6 +106,8 @@ class BasicPlayer(Player):
         """
         The dealer will be required to discard if he has a card ordered up.
         This function decides what to discard.
+
+        :attention unit tests written.
 
         :param trump_suit: The suit of the card determined to be trump.
         :return: The discarded card.

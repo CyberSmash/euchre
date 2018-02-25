@@ -173,4 +173,17 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(9, discard.value)
 
     def test_make_bid_rnd_2(self):
-        pass
+        top_card = Card(Card.SUIT_SPADES, Card.ACE)
+        choice = self.player.make_bid_rnd_2(top_card)
+        self.assertEqual(Card.SUIT_NOSUIT, choice)
+
+        self.player.hand = [
+            Card(Card.SUIT_CLUBS, Card.JACK),
+            Card(Card.SUIT_SPADES, Card.KING),
+            Card(Card.SUIT_HEARTS, Card.ACE),
+            Card(Card.SUIT_SPADES, Card.JACK),
+            Card(Card.SUIT_HEARTS, 9)
+        ]
+        top_card = Card(Card.SUIT_DIAMONDS, Card.ACE)
+        choice = self.player.make_bid_rnd_2(top_card)
+        self.assertEqual(Card.SUIT_SPADES, choice)
