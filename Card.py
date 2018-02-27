@@ -26,7 +26,7 @@ class Card(object):
     def __init__(self, suit=None, value=None):
         if value < 9 or value > Card.ACE:
             raise ValueError("Card value cannot be larger than and ACE (9-13 Inclusive).")
-        if suit < Card.SUIT_SPADES or suit > Card.SUIT_DIAMONDS:
+        if suit < Card.SUIT_NOSUIT or suit > Card.SUIT_DIAMONDS:
             raise ValueError("Card Suit must be between 0 and 3 (inclusive)")
 
         self._suit = suit

@@ -19,22 +19,24 @@ class BasicPlayer(Player):
     def make_move(self, game_state: GameState):
 
         card = None
-
+        valid_plays = game_state.get_valid_plays(self.hand)
         if len(game_state.trick_cards) == 0:
-            # It's my lead
+            # It's my lead, I can play anything I want.
             card = self.get_biggest_trump(game_state.trumps)
             if card is None:
                 # lead biggest off suit
                 card = self.get_biggest_non_trump(game_state.trumps)
 
-        elif len(game_state.trick_cards) < 4:
-            # @todo: This is not yet implemented.
-            pass
+        elif len(game_state.trick_cards) == 1:
+            # I'm the second player to play. I need to determine if I can beat the
+            # previous player's card.
+            opponent_card = game_state.played_cards[-1]
+
         else:
             # I'm the last person. Determine if my partner is already winning
             current_winner = game_state.calc_winner()
             # @ todo, this should be fixed, its not always going to be that player id and team id are connected.
-            current_winner_team_id = current_winner % 2
+            current_winner_team_id = current_winner.get_total_value(game_state.trumps, game_state.lead_card) % 2
 
             # My partner has already won the trick, toss something stupid
             if current_winner_team_id == self.team_id:
@@ -287,7 +289,7 @@ class BasicPlayer(Player):
 
         return card
 
-    def get_biggest_trump(self, trump_suit: int, lead_card_suit: int=Card.SUIT_NOSUIT) -> Optional[Card]:
+    def get_biggest_trump(self, trump_suit: int, lead_card_suit: int, hand: List[Card]) -> Optional[Card]:
         """
         Get the biggest trump-suited card in my hand.
 
@@ -295,6 +297,7 @@ class BasicPlayer(Player):
 
         :param trump_suit: The trumpian suit.
         :param lead_card_suit: The lead card's suit.
+        :param hand: The hand.
         :return: None if there are no trump cards. The biggest trump card if one exists.
         """
         try:
@@ -305,30 +308,43 @@ class BasicPlayer(Player):
 
         return card
 
-    def get_trump_cards(self, trump_suit):
+    def get_trump_cards(self, trump_suit: int, hand: List[Card]):
         """
         Return all of the card sin my hand that are trumps.
 
+        :note The hand list may be the entire self.hand, or the caller may provide a reduced list of cards,
+        possibly passed through game_state.get_valid_cards().
+
         :attention tests written
 
-        :param trump_suit: The suit of trump.
+        :param trump_suit: The trump suit.
+        :param hand: A hand.
         :return: A list of cards.
         """
-        cards = [card for card in self.hand if card.get_suit(trump_suit) == trump_suit]
+        cards = [card for card in hand if card.get_suit(trump_suit) == trump_suit]
         return cards
 
-    def get_biggest_non_trump(self, trump_suit, lead_card_suit=Card.SUIT_NOSUIT) -> Optional[Card]:
+    def get_biggest_non_trump(self, trump_suit: int, lead_card: Card, hand: List[Card]) -> Optional[Card]:
         """
         Get the biggest non-trump card.
 
+        Note that the hand parameter can (or should be) a reduced list of cards provided by
+        game_state.get_valid_cards().
+
+        TODO: This function might not work if lead_card can't be set. We may need to re-work this or Card.get_suit
+        to account for a lead_card of None.
+
         :attention tests written
 
-        :param trump_suit: The suit to be avoided as trump.
+        :param trump_suit: The trump suit
+        :param lead_card: The card that was lead.
+        :param hand: The players hand. This may be a restricted list of playable cards.
         :return: The biggest non-trump suit. In case of a tie, the first one encountered is returned.
         """
         try:
-            card = max(filter(lambda a: a.get_suit(trump_suit) != trump_suit, self.hand),
-                       key=lambda c: c.get_total_value(trump_suit, lead_card_suit))
+            card = max(
+                filter(lambda a: a.get_suit(trump_suit) != trump_suit, hand),
+                key=lambda c: c.get_total_value(trump_suit, lead_card.get_suit(trump_suit)))
         except ValueError as ex:
             return None
 

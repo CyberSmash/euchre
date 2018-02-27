@@ -3,7 +3,7 @@ from BasicPlayer import BasicPlayer
 from enums import Teams
 from Card import Card
 from Player import Player
-
+from GameState import GameState
 
 class TestBasicPlayer(TestCase):
 
@@ -22,29 +22,47 @@ class TestBasicPlayer(TestCase):
 
     def test_get_biggest_non_trump(self):
 
-        card = self.player.get_biggest_non_trump(Card.SUIT_HEARTS)
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_HEARTS
+        game_state.lead_card = Card(Card.SUIT_HEARTS, 10)
+
+        card = self.player.get_biggest_non_trump(Card.SUIT_HEARTS, game_state.lead_card, self.player.hand)
+
         self.assertEqual(card.value, self.player.hand[1].value)
         self.assertEqual(card._suit, self.player.hand[1]._suit)
 
-        card = self.player.get_biggest_non_trump(Card.SUIT_SPADES)
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_SPADES
+        game_state.lead_card = Card(Card.SUIT_HEARTS, 10)
+        card = self.player.get_biggest_non_trump(Card.SUIT_SPADES, game_state.lead_card, self.player.hand)
         self.assertEqual(card.value, Card.ACE)
         self.assertEqual(card._suit, Card.SUIT_HEARTS)
 
     def test_get_trump_cards(self):
 
-        cards = self.player.get_trump_cards(Card.SUIT_HEARTS)
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_HEARTS
+        game_state.lead_card = Card(Card.SUIT_HEARTS, 10)
+        cards = self.player.get_trump_cards(game_state.trumps, self.player.hand)
         self.assertEqual(len(cards), 3)
 
         self.assertEqual(cards[0], self.player.hand[2])
         self.assertEqual(cards[1], self.player.hand[3])
         self.assertEqual(cards[2], self.player.hand[4])
 
-
-        cards = self.player.get_trump_cards(Card.SUIT_HEARTS)
+        cards = self.player.get_trump_cards(game_state.trumps, self.player.hand)
         self.assertEqual(len(cards), 3)
 
-        cards = self.player.get_trump_cards(Card.SUIT_CLUBS)
+        game_state.trumps = Card.SUIT_CLUBS
+        game_state.lead_card._suit = Card.SUIT_CLUBS
+        cards = self.player.get_trump_cards(game_state.trumps, self.player.hand)
         self.assertEqual(len(cards), 1)
+
+        # Test that even through the player has a trump card, he cannot play it
+        # since the lead card is hearts and he must follow suit.
+        game_state.lead_card._suit = Card.SUIT_HEARTS
+        cards = self.player.get_trump_cards(game_state.trumps, game_state.get_valid_plays(self.player.hand))
+        self.assertEqual(len(cards), 0)
 
     def test_find_lowest_card(self):
 
@@ -53,9 +71,12 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(lowest_card._suit, Card.SUIT_HEARTS)
 
     def test_get_biggest_trump(self):
+        lead_card = Card(Card.SUIT_SPADES, 10)
+        biggest_trump = self.player.get_biggest_trump(Card.SUIT_HEARTS,
+                                                      lead_card.get_suit(Card.SUIT_HEARTS), self.player.hand)
 
-        biggest_trump = self.player.get_biggest_trump(Card.SUIT_HEARTS, Card.SUIT_NOSUIT)
-        self.assertEqual(biggest_trump.get_total_value(Card.SUIT_HEARTS, Card.SUIT_NOSUIT), Card.JACK + Card.LEFT_BOWER_BONUS)
+        self.assertEqual(biggest_trump.get_total_value(Card.SUIT_HEARTS, Card.SUIT_NOSUIT),
+                         Card.JACK + Card.LEFT_BOWER_BONUS)
         self.assertEqual(biggest_trump.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)
 
     def test_find_voidable_suits(self):

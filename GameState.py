@@ -162,8 +162,6 @@ class GameState(object):
         :return: True if the card is a valid one. False otherwise.
         """
         if self.lead_card is None:
-            # Save as the lead card
-            self.lead_card = played_card
             # Person who plays first can play anything...
             return True
 
