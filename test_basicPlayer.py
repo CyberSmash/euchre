@@ -28,8 +28,8 @@ class TestBasicPlayer(TestCase):
 
         card = self.player.get_biggest_non_trump(Card.SUIT_HEARTS, game_state.lead_card, self.player.hand)
 
-        self.assertEqual(card.value, self.player.hand[1].value)
-        self.assertEqual(card._suit, self.player.hand[1]._suit)
+        self.assertEqual(card.value, Card.KING)
+        self.assertEqual(card._suit, Card.SUIT_SPADES)
 
         game_state = GameState(1)
         game_state.trumps = Card.SUIT_SPADES
@@ -65,10 +65,19 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(len(cards), 0)
 
     def test_find_lowest_card(self):
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_SPADES
+        game_state.lead_card = Card(Card.SUIT_HEARTS, 10)
 
-        lowest_card = self.player.find_lowest_card(Card.SUIT_CLUBS)
+        lowest_card = self.player.find_lowest_card(Card.SUIT_CLUBS, game_state.trumps,
+                                                   game_state.get_valid_plays(self.player.hand))
         self.assertEqual(lowest_card.value, 9)
         self.assertEqual(lowest_card._suit, Card.SUIT_HEARTS)
+
+        lowest_card = self.player.find_lowest_card(Card.SUIT_HEARTS, Card.SUIT_DIAMONDS,
+                                                   game_state.get_valid_plays(self.player.hand))
+
+        self.assertIsNone(lowest_card)  # The Jack of Diamonds that hte player has is really a Heart.
 
     def test_get_biggest_trump(self):
         lead_card = Card(Card.SUIT_SPADES, 10)
@@ -80,41 +89,72 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(biggest_trump.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)
 
     def test_find_voidable_suits(self):
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_SPADES
+        game_state.lead_card = Card(Card.SUIT_SPADES, Card.ACE)
 
-        voidable_suits = self.player.find_voidable_suits(Card.SUIT_DIAMONDS)
+        self.player.hand = [
+            Card(Card.SUIT_CLUBS, 10),
+            Card(Card.SUIT_HEARTS, Card.ACE),
+            Card(Card.SUIT_DIAMONDS, Card.JACK),
+            Card(Card.SUIT_HEARTS, 9)
+        ]
+
+        voidable_suits = self.player.find_voidable_suits(
+            game_state.trumps,
+            game_state.get_valid_plays(self.player.hand)
+        )
         self.assertEqual(2, len(voidable_suits))
         self.assertTrue(Card.SUIT_CLUBS in voidable_suits)
-        self.assertTrue(Card.SUIT_SPADES in voidable_suits)
+        self.assertTrue(Card.SUIT_DIAMONDS in voidable_suits)
 
-        voidable_suits = self.player.find_voidable_suits(Card.SUIT_HEARTS)
+        voidable_suits = self.player.find_voidable_suits(
+            Card.SUIT_NOSUIT,
+            game_state.get_valid_plays(self.player.hand)
+        )
+
         self.assertEqual(2, len(voidable_suits))
-        self.assertTrue(Card.SUIT_SPADES in voidable_suits)
-        self.assertTrue(Card.SUIT_CLUBS in voidable_suits)
-
-        voidable_suits = self.player.find_voidable_suits(Card.SUIT_NOSUIT)
-        self.assertEqual(3, len(voidable_suits))
-        self.assertTrue(Card.SUIT_SPADES in voidable_suits)
         self.assertTrue(Card.SUIT_CLUBS in voidable_suits)
         self.assertTrue(Card.SUIT_DIAMONDS in voidable_suits)
 
     def test_num_offsuit_aces(self):
+        self.player.hand = [
+            Card(Card.SUIT_CLUBS, 10),
+            Card(Card.SUIT_HEARTS, Card.ACE),
+            Card(Card.SUIT_DIAMONDS, Card.JACK),
+            Card(Card.SUIT_HEARTS, 9)
+        ]
 
-        num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_DIAMONDS)
+        game_state = GameState(1)
+        game_state.trumps = Card.SUIT_SPADES
+        game_state.lead_card = Card(Card.SUIT_SPADES, Card.ACE)
+
+        num_offsuit_aces = self.player.num_offsuit_aces(
+            game_state.trumps,
+            game_state.get_valid_plays(self.player.hand)
+        )
         self.assertEqual(1, num_offsuit_aces)
 
-        num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_HEARTS)
+        num_offsuit_aces = self.player.num_offsuit_aces(
+            Card.SUIT_HEARTS,
+            game_state.get_valid_plays(self.player.hand)
+        )
+
         self.assertEqual(0, num_offsuit_aces)
 
-        num_offsuit_aces = self.player.num_offsuit_aces(Card.SUIT_NOSUIT)
+        num_offsuit_aces = self.player.num_offsuit_aces(
+            Card.SUIT_NOSUIT,
+            game_state.get_valid_plays(self.player.hand)
+        )
         self.assertEqual(1, num_offsuit_aces)
 
     def test_has_card(self):
 
-        self.assertEqual(True, self.player.has_card(10, Card.SUIT_CLUBS))
-        self.assertEqual(True, self.player.has_card(Card.ACE, Card.SUIT_HEARTS))
-        self.assertEqual(False, self.player.has_card(Card.ACE, Card.SUIT_CLUBS))
-        self.assertEqual(True, self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS))
-        self.assertEqual(True, self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS, Card.SUIT_DIAMONDS))
+        self.assertTrue(self.player.has_card(10, Card.SUIT_CLUBS))
+        self.assertTrue(self.player.has_card(Card.ACE, Card.SUIT_HEARTS))
+        self.assertTrue(self.player.has_card(Card.ACE, Card.SUIT_CLUBS))
+        self.assertTrue(self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS))
+        self.assertTrue(self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS, Card.SUIT_DIAMONDS))
 
     def test_would_have_left_bower(self):
 
