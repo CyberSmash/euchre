@@ -38,6 +38,9 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(card.value, Card.ACE)
         self.assertEqual(card._suit, Card.SUIT_HEARTS)
 
+        result = self.player.get_biggest_non_trump(Card.SUIT_SPADES, game_state.lead_card, [])
+        self.assertIsNone(result)
+
     def test_get_trump_cards(self):
 
         game_state = GameState(1)
@@ -87,6 +90,9 @@ class TestBasicPlayer(TestCase):
         self.assertEqual(biggest_trump.get_total_value(Card.SUIT_HEARTS, Card.SUIT_NOSUIT),
                          Card.JACK + Card.LEFT_BOWER_BONUS)
         self.assertEqual(biggest_trump.get_suit(Card.SUIT_HEARTS), Card.SUIT_HEARTS)
+
+        biggest_trump = self.player.get_biggest_trump(Card.SUIT_HEARTS, lead_card.get_suit(Card.SUIT_HEARTS), [])
+        self.assertIsNone(biggest_trump)
 
     def test_find_voidable_suits(self):
         game_state = GameState(1)
@@ -152,7 +158,7 @@ class TestBasicPlayer(TestCase):
 
         self.assertTrue(self.player.has_card(10, Card.SUIT_CLUBS))
         self.assertTrue(self.player.has_card(Card.ACE, Card.SUIT_HEARTS))
-        self.assertTrue(self.player.has_card(Card.ACE, Card.SUIT_CLUBS))
+        self.assertFalse(self.player.has_card(Card.ACE, Card.SUIT_CLUBS))
         self.assertTrue(self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS))
         self.assertTrue(self.player.has_card(Card.JACK, Card.SUIT_DIAMONDS, Card.SUIT_DIAMONDS))
 
@@ -248,3 +254,41 @@ class TestBasicPlayer(TestCase):
         top_card = Card(Card.SUIT_DIAMONDS, Card.ACE)
         choice = self.player.make_bid_rnd_2(top_card)
         self.assertEqual(Card.SUIT_SPADES, choice)
+
+    def test_is_loaner(self):
+        game_state = GameState(1)
+        self.assertFalse(self.player.is_loaner(game_state))
+
+    def test_get_smallest_winning_card(self):
+        game_state = GameState(1)
+        game_state.lead_card = Card(Card.SUIT_HEARTS, 10)
+        game_state.trick_cards = [game_state.lead_card]
+        game_state.trumps = Card.SUIT_HEARTS
+
+        lead_card_suit = game_state.lead_card.get_suit(game_state.trumps)
+
+        smallest_winning = self.player.smallest_winning_card(
+            Card.SUIT_HEARTS,
+            game_state.trick_cards,
+            game_state.get_valid_plays(self.player.hand)
+        )
+
+        self.assertIsNotNone(smallest_winning)
+        self.assertEqual(Card.SUIT_HEARTS, smallest_winning.get_suit(game_state.trumps))
+        self.assertEqual(Card.ACE + Card.TRUMP_BONUS,
+                         smallest_winning.get_total_value(game_state.trumps, lead_card_suit)
+                         )
+
+        game_state.lead_card = Card(Card.SUIT_HEARTS, Card.JACK)
+        game_state.trick_cards = [game_state.lead_card]
+
+        smallest_winning = self.player.smallest_winning_card(
+            Card.SUIT_HEARTS,
+            game_state.trick_cards,
+            game_state.get_valid_plays(self.player.hand)
+        )
+        self.assertIsNone(smallest_winning)
+
+    def test_make_move(self):
+        pass
+

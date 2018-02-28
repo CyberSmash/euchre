@@ -10,10 +10,6 @@ import operator
 
 class BasicPlayer(Player):
 
-    CHANCE_OF_RND_1_BID = 4
-    CHANCE_OF_RND_2_BID = 4
-    CHANCE_OF_LOANER = 32
-
     BID_THRESHOLD = 7
 
     def make_move(self, game_state: GameState):
@@ -187,7 +183,7 @@ class BasicPlayer(Player):
                 return True
         return False
 
-    def has_card(self, value, suit, trump_suit=Card.SUIT_NOSUIT) -> bool:
+    def has_card(self, value: int, suit: int, trump_suit: int=Card.SUIT_NOSUIT) -> bool:
         """
         Determine if there is a particular card in the player's hand.
 
@@ -357,11 +353,31 @@ class BasicPlayer(Player):
 
         return card
 
-    def winning_card(self, trump_suit, tricks_played):
+    def smallest_winning_card(self, trump_suit: int, tricks_played: List[Card], hand: List[Card]) -> Optional[Card]:
         """
+        Get the smallest winning card.
 
-        :param trump_suit:
-        :param tricks_played:
-        :return:
+        :param trump_suit: the trump suit.
+        :param tricks_played: The tricks that have already been played,
+
+        :return: None if there is no card that will win, or there is no lead card. Otherwise, the smallest card that can win the trick otherwise.
         """
-        pass
+        if len(tricks_played) == 0:
+            return None
+
+        lead_card = tricks_played[0]
+
+        lead_card_suit = tricks_played[0].get_suit(trump_suit)
+        lead_card_value = tricks_played[0].get_total_value(trump_suit, lead_card_suit)
+
+        winning_cards =filter(lambda a: a.get_total_value(trump_suit, lead_card_suit) > lead_card_value, hand)
+        try:
+            smallest_card = min(
+                winning_cards,
+                key=lambda c: c.get_total_value(trump_suit, lead_card_suit))
+
+        except ValueError as ex:
+            return None
+
+        return smallest_card
+
